@@ -80,24 +80,17 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Ensure background image is applied if needed, or remove if solid color is preferred */
-    /* background-image: url('/background-lab.png'); */ /* Commented out to prioritize solid color theme */
-    /* background-size: cover; */
-    /* background-position: center; */
-    /* background-attachment: fixed; */
     font-family: 'Press Start 2P', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
     font-smooth: never;
     -webkit-font-smoothing: none;
     -moz-osx-font-smoothing: grayscale;
-    image-rendering: pixelated; /* Apply to all images for pixel art style */
+    image-rendering: pixelated; 
   }
-  /* Ensure inputs and buttons also use the pixel font */
   input, textarea, button, select {
     font-family: inherit;
   }
 }
 
-/* Helper for pixelated borders on specific elements if needed */
 .pixel-box {
   border: 2px solid hsl(var(--border));
   box-shadow: 2px 2px 0px hsl(var(--border));
@@ -106,4 +99,12 @@
 
 .pixel-text {
    font-family: 'Press Start 2P', system-ui, sans-serif;
+}
+
+/* Mobile landscape prompt styles */
+@media screen and (max-width: 767px) and (orientation: portrait) {
+  main > .game-content-wrapper {
+    display: none !important;
+  }
+  /* body::after is one way, but a dedicated div rendered by React is better for complex content. The prompt component handles this. */
 }
