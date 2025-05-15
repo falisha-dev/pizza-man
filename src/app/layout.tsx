@@ -21,8 +21,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${pressStart2P.variable} dark`}> {/* Apply font variable and dark theme default */}
-      <body className={`font-sans antialiased`}> {/* Tailwind's font-sans will use the variable */}
+    <html lang="en" className={`${pressStart2P.variable} dark`}>
+      <body className={`font-sans antialiased`}>
         {children}
         <Toaster />
       </body>
