@@ -1,3 +1,4 @@
+
 // src/components/game/Game.tsx
 "use client";
 
@@ -24,7 +25,7 @@ const LEVEL_UP_SCORE_INTERVAL = 50;
 
 interface ObstacleState {
   id: string;
-  x: number;
+  worldX: number; // X position in the game world
   y: number;
   width: number;
   height: number;
@@ -41,10 +42,12 @@ const obstacleColors = [
 ];
 
 const PLAYER_ANIMATION_INTERVAL = 150; // ms per frame
+const PLAYER_TARGET_SCREEN_X = 100; // Player's fixed X position on the screen
 
 const Game: React.FC = () => {
-  const [playerPosition, setPlayerPosition] = useState({ x: 50, y: GROUND_Y });
-  const [playerVelocity, setPlayerVelocity] = useState({ vx: 0, vy: 0 });
+  const [playerWorldX, setPlayerWorldX] = useState(PLAYER_TARGET_SCREEN_X);
+  const [playerPositionY, setPlayerPositionY] = useState(GROUND_Y);
+  const [playerVelocityY, setPlayerVelocityY] = useState(0);
   const [isJumping, setIsJumping] = useState(false);
   const [obstacles, setObstacles] = useState<ObstacleState[]>([]);
   const [score, setScore] = useState(0);
@@ -55,7 +58,7 @@ const Game: React.FC = () => {
   const [obstacleSpeed, setObstacleSpeed] = useState(initialObstacleSpeed);
   const [obstacleSpawnInterval, setObstacleSpawnInterval] = useState(initialObstacleSpawnInterval);
 
-  const [playerAnimationFrame, setPlayerAnimationFrame] = useState(0); // 0: standing, 1: walk1, 2: walk2
+  const [playerAnimationFrame, setPlayerAnimationFrame] = useState(0);
   const [isMovingHorizontally, setIsMovingHorizontally] = useState(false);
   const playerAnimationTimerRef = useRef<NodeJS.Timeout>();
 
@@ -65,9 +68,14 @@ const Game: React.FC = () => {
   const lastObstacleSpawnTimeRef = useRef(0);
   const scoreIntervalRef = useRef<NodeJS.Timeout>();
 
+  // Calculate how much the world has scrolled based on player's world position
+  // Ensures player appears at PLAYER_TARGET_SCREEN_X
+  const worldScrollX = playerWorldX - PLAYER_TARGET_SCREEN_X;
+
   const resetGame = useCallback(() => {
-    setPlayerPosition({ x: 50, y: GROUND_Y });
-    setPlayerVelocity({ vx: 0, vy: 0 });
+    setPlayerWorldX(PLAYER_TARGET_SCREEN_X);
+    setPlayerPositionY(GROUND_Y);
+    setPlayerVelocityY(0);
     setIsJumping(false);
     setObstacles([]);
     setScore(0);
@@ -108,18 +116,17 @@ const Game: React.FC = () => {
     };
   }, [handleKeyDown, handleKeyUp]);
   
-  // Player Animation Effect
   useEffect(() => {
     if (isMovingHorizontally && !gameOver && gameRunning) {
       playerAnimationTimerRef.current = setInterval(() => {
         setPlayerAnimationFrame(prevFrame => {
-          if (prevFrame === 0) return 1; // From standing to walk1
-          return prevFrame === 1 ? 2 : 1; // Toggle between walk1 and walk2
+          if (prevFrame === 0) return 1; 
+          return prevFrame === 1 ? 2 : 1; 
         });
       }, PLAYER_ANIMATION_INTERVAL);
     } else {
       if (playerAnimationTimerRef.current) clearInterval(playerAnimationTimerRef.current);
-      setPlayerAnimationFrame(0); // Standing frame
+      setPlayerAnimationFrame(0); 
     }
     return () => {
       if (playerAnimationTimerRef.current) clearInterval(playerAnimationTimerRef.current);
@@ -132,22 +139,24 @@ const Game: React.FC = () => {
     const height = OBSTACLE_MIN_HEIGHT + Math.random() * (OBSTACLE_MAX_HEIGHT - OBSTACLE_MIN_HEIGHT);
     const type = Math.random() > 0.3 ? 'ground' : 'floating';
     const floatingObstacleBaseY = GAME_HEIGHT - height - PLAYER_HEIGHT;
-    const y = type === 'ground' 
+    const yPosition = type === 'ground' 
       ? GAME_HEIGHT - height 
       : floatingObstacleBaseY - Math.random() * PLAYER_HEIGHT * 1.2;
     
+    const spawnWorldX = worldScrollX + GAME_WIDTH + Math.random() * 100; // Spawn off-screen to the right
+
     setObstacles(prev => [
       ...prev,
       {
         id: `obs-${Date.now()}-${Math.random()}`,
-        x: GAME_WIDTH,
-        y: Math.max(0, y),
+        worldX: spawnWorldX,
+        y: Math.max(0, yPosition),
         width,
         height,
         color: obstacleColors[Math.floor(Math.random() * obstacleColors.length)],
       },
     ]);
-  }, []);
+  }, [worldScrollX]); 
   
   useEffect(() => {
     if (!gameRunning || gameOver) {
@@ -171,24 +180,26 @@ const Game: React.FC = () => {
       return;
     }
 
-    // Player Horizontal Movement
-    let newPlayerX = playerPosition.x;
+    // Player Horizontal Movement (updates playerWorldX)
+    let newPlayerWorldX = playerWorldX;
     let currentlyMovingHorizontally = false;
     if (keysPressed.current['ArrowLeft'] || keysPressed.current['KeyA']) {
-      newPlayerX -= PLAYER_HORIZONTAL_SPEED;
+      newPlayerWorldX -= PLAYER_HORIZONTAL_SPEED;
       currentlyMovingHorizontally = true;
     }
     if (keysPressed.current['ArrowRight'] || keysPressed.current['KeyD']) {
-      newPlayerX += PLAYER_HORIZONTAL_SPEED;
+      newPlayerWorldX += PLAYER_HORIZONTAL_SPEED;
       currentlyMovingHorizontally = true;
     }
-    newPlayerX = Math.max(0, Math.min(GAME_WIDTH - PLAYER_WIDTH, newPlayerX));
+    // Prevent player from moving left past their target screen X (worldScrollX won't go < 0)
+    newPlayerWorldX = Math.max(PLAYER_TARGET_SCREEN_X, newPlayerWorldX);
+    setPlayerWorldX(newPlayerWorldX);
     setIsMovingHorizontally(currentlyMovingHorizontally);
 
 
     // Player Vertical Movement (Jumping & Gravity)
-    let newPlayerY = playerPosition.y;
-    let newPlayerVy = playerVelocity.vy;
+    let newPlayerY = playerPositionY;
+    let newPlayerVy = playerVelocityY;
 
     if ((keysPressed.current['Space'] || keysPressed.current['ArrowUp'] || keysPressed.current['KeyW']) && !isJumping) {
       newPlayerVy = JUMP_STRENGTH;
@@ -204,8 +215,8 @@ const Game: React.FC = () => {
       setIsJumping(false);
     }
     
-    setPlayerPosition({ x: newPlayerX, y: newPlayerY });
-    setPlayerVelocity({ vx: 0, vy: newPlayerVy });
+    setPlayerPositionY(newPlayerY);
+    setPlayerVelocityY(newPlayerVy);
 
     // Obstacle Management
     if (timestamp - lastObstacleSpawnTimeRef.current > obstacleSpawnInterval) {
@@ -215,14 +226,16 @@ const Game: React.FC = () => {
 
     setObstacles(prevObstacles =>
       prevObstacles
-        .map(obs => ({ ...obs, x: obs.x - obstacleSpeed }))
-        .filter(obs => obs.x + obs.width > 0)
+        .map(obs => ({ ...obs, worldX: obs.worldX - obstacleSpeed })) // Move obstacles in the world
+        .filter(obs => (obs.worldX - worldScrollX) + obs.width > 0) // Filter obstacles off-screen to the left
     );
 
     // Collision Detection
-    const playerRect = { x: newPlayerX, y: newPlayerY, width: PLAYER_WIDTH, height: PLAYER_HEIGHT };
+    // Player's screen rectangle is fixed at PLAYER_TARGET_SCREEN_X
+    const playerRect = { x: PLAYER_TARGET_SCREEN_X, y: newPlayerY, width: PLAYER_WIDTH, height: PLAYER_HEIGHT };
     for (const obs of obstacles) {
-      const obsRect = { x: obs.x, y: obs.y, width: obs.width, height: obs.height };
+      const obsScreenX = obs.worldX - worldScrollX; // Calculate obstacle's screen X
+      const obsRect = { x: obsScreenX, y: obs.y, width: obs.width, height: obs.height };
       if (
         playerRect.x < obsRect.x + obsRect.width &&
         playerRect.x + playerRect.width > obsRect.x &&
@@ -235,7 +248,8 @@ const Game: React.FC = () => {
       }
     }
     
-    if (score > 0 && score % LEVEL_UP_SCORE_INTERVAL === 0 && level === Math.floor(score / LEVEL_UP_SCORE_INTERVAL) ) {
+    const expectedLevelBasedOnScore = Math.floor(score / LEVEL_UP_SCORE_INTERVAL) + 1;
+    if (score > 0 && score % LEVEL_UP_SCORE_INTERVAL === 0 && level < expectedLevelBasedOnScore ) {
         setLevel(l => l + 1);
         setObstacleSpeed(s => s + 0.2);
         setObstacleSpawnInterval(i => Math.max(500, i - 100));
@@ -243,8 +257,8 @@ const Game: React.FC = () => {
 
     gameLoopRef.current = requestAnimationFrame(gameLoop);
   }, [
-      gameRunning, gameOver, playerPosition, playerVelocity.vy, isJumping, 
-      obstacles, spawnObstacle, obstacleSpeed, obstacleSpawnInterval, score, level
+      gameRunning, gameOver, playerWorldX, playerPositionY, playerVelocityY, isJumping, 
+      obstacles, spawnObstacle, obstacleSpeed, obstacleSpawnInterval, score, level, worldScrollX
   ]);
 
 
@@ -259,6 +273,17 @@ const Game: React.FC = () => {
     };
   }, [gameRunning, gameOver, gameLoop]);
 
+  // Style for the game area to enable background scrolling
+  const gameAreaStyle: React.CSSProperties = {
+    width: `${GAME_WIDTH}px`,
+    height: `${GAME_HEIGHT}px`,
+    backgroundImage: 'url(/pixelbg.jpg)',
+    backgroundRepeat: 'repeat-x', // Tile the background image horizontally
+    backgroundPositionY: 'center', // Keep vertical position centered (or '0' if top aligned)
+    backgroundPositionX: `-${worldScrollX % GAME_WIDTH}px`, // Scroll horizontally, loop the background image
+    backgroundSize: `auto ${GAME_HEIGHT}px`, // Scale image height to game height, auto width for tiling
+    borderWidth: '2px', // From pixel-box class
+  };
 
   return (
     <div className="flex flex-col items-center p-2 md:p-4 rounded-md pixel-box bg-[hsl(var(--game-area-background))]">
@@ -268,35 +293,35 @@ const Game: React.FC = () => {
       </div>
       <div
         ref={gameAreaRef}
-        className="relative overflow-hidden pixel-box"
-        style={{
-          width: `${GAME_WIDTH}px`,
-          height: `${GAME_HEIGHT}px`,
-          backgroundImage: 'url(/pixelbg.jpg)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          borderWidth: '2px',
-        }}
+        className="relative overflow-hidden pixel-box" // pixel-box for border
+        style={gameAreaStyle}
         tabIndex={0}
       >
         <PlayerComponent
-          x={playerPosition.x}
-          y={playerPosition.y}
+          x={PLAYER_TARGET_SCREEN_X} // Player's X is now fixed on screen
+          y={playerPositionY}
           width={PLAYER_WIDTH}
           height={PLAYER_HEIGHT}
           animationFrame={playerAnimationFrame}
           isMoving={isMovingHorizontally}
         />
-        {obstacles.map(obs => (
-          <ObstacleComponent
-            key={obs.id}
-            x={obs.x}
-            y={obs.y}
-            width={obs.width}
-            height={obs.height}
-            color={obs.color}
-          />
-        ))}
+        {obstacles.map(obs => {
+          const screenX = obs.worldX - worldScrollX;
+          // Optimization: Only render obstacles that are potentially visible on screen
+          if (screenX + obs.width > 0 && screenX < GAME_WIDTH) {
+            return (
+              <ObstacleComponent
+                key={obs.id}
+                x={screenX}
+                y={obs.y}
+                width={obs.width}
+                height={obs.height}
+                color={obs.color}
+              />
+            );
+          }
+          return null;
+        })}
         {gameOver && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 p-4">
             <h2 className="text-3xl md:text-4xl text-destructive mb-4 pixel-text">Game Over</h2>
@@ -316,3 +341,5 @@ const Game: React.FC = () => {
 };
 
 export default Game;
+
+    
