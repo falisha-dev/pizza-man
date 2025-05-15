@@ -11,77 +11,30 @@ interface PlayerProps {
 }
 
 const Player: React.FC<PlayerProps> = ({ x, y, width, height }) => {
-  // Colors
-  const skinColor = 'hsl(35, 70%, 75%)'; 
-  const hairColor = 'hsl(30, 50%, 30%)'; // Dark Brown hair
-  const shirtColor = 'hsl(var(--primary))'; 
-  const pantsColor = 'hsl(220, 40%, 35%)'; // Denim Blue
-  const backpackColor = 'hsl(120, 35%, 45%)'; // Forest Green
-  const shoeColor = 'hsl(0, 0%, 25%)'; // Dark Gray/Black
-
-  // Proportions for a more defined human look within width x height
+  // Colors based on the reference image
+  const hairColor = 'hsl(10, 70%, 50%)'; // Red-Orange
+  const skinColor = 'hsl(30, 60%, 80%)'; // Light Peach
+  const eyeColor = 'hsl(270, 15%, 20%)'; // Dark Purple (like pants accents)
   
-  // Head Group
-  const headR = width * 0.18; 
-  const headCx = width * 0.6; 
-  const headCy = height * 0.23;
+  const jacketColor = 'hsl(180, 50%, 60%)'; // Teal
+  const jacketLinesColor = 'hsl(270, 20%, 30%)'; // Darker purple for jacket details
 
-  const neckW = headR * 0.7;
-  const neckH = height * 0.08;
-  const neckX = headCx - neckW / 2;
-  const neckY = headCy + headR * 0.7; // Neck connects below head center
+  const pantsColor = 'hsl(270, 20%, 30%)'; // Dark Purple
+  const bootsColor = 'hsl(270, 20%, 20%)'; // Darker Purple/Blackish
 
-  const hairW = headR * 2.4;
-  const hairH = headR * 1.8; 
-  const hairX = headCx - hairW / 2;
-  const hairY = headCy - headR * 1.2; 
-  const hairRx = headR * 0.7;
+  const backpackColor = 'hsl(30, 30%, 35%)'; // Brown
+  const backpackStrapColor = 'hsl(30, 30%, 25%)'; // Darker Brown
 
-  // Torso
-  const torsoW = width * 0.42;
-  const torsoH = height * 0.38;
-  const torsoX = headCx - torsoW * 0.65; 
-  const torsoY = neckY + neckH * 0.6; 
-  const torsoRx = width * 0.08;
+  // Define a "pixel unit" relative to the player's overall size.
+  // The reference image character is roughly 16-18 "source pixels" wide and 28-30 "source pixels" tall.
+  // We'll scale these units to fit within the `width` and `height`.
+  // Let's base our drawing on a conceptual grid of roughly 18 units across for width, and 22 for height to maintain aspect.
+  const unitW = width / 18;
+  const unitH = height / 22; // Character is taller than wide
 
-  // Arms
-  const armW = width * 0.16;
-  const armH = height * 0.36;
-  const handRadius = armW * 0.55;
-  const armRx = width * 0.05;
-
-  // Far Arm (swings slightly back)
-  const farArmX = torsoX + armW * 0.1;
-  const farArmY = torsoY + torsoH * 0.1;
-  const farHandCx = farArmX + armW / 2;
-  const farHandCy = farArmY + armH;
-
-  // Near Arm (swings slightly forward)
-  const nearArmX = torsoX + torsoW - armW * 1.1;
-  const nearArmY = torsoY + torsoH * 0.15;
-  const nearHandCx = nearArmX + armW / 2;
-  const nearHandCy = nearArmY + armH;
-  
-  // Legs
-  const legW = width * 0.19;
-  const legH = height * 0.42;
-  const shoeH = legH * 0.22;
-  const pantsH = legH - shoeH;
-  const legRx = width * 0.05;
-  const legTopY = torsoY + torsoH - legH * 0.15;
-
-  // Far Leg
-  const farLegX = torsoX + torsoW * 0.2;
-  
-  // Near Leg
-  const nearLegX = torsoX + torsoW * 0.55;
-
-  // Backpack
-  const bpW = width * 0.40;
-  const bpH = height * 0.50;
-  const bpX = torsoX - bpW * 0.45; 
-  const bpY = torsoY + torsoH * 0.1;
-  const bpRx = width * 0.1;
+  // Helper to make positioning easier, assuming character is centered
+  const charOffsetX = 0; // If specific horizontal centering is needed within the box
+  const charOffsetY = unitH * 1; // Start drawing a bit lower in the box
 
   return (
     <div
@@ -99,42 +52,65 @@ const Player: React.FC<PlayerProps> = ({ x, y, width, height }) => {
         height={height}
         viewBox={`0 0 ${width} ${height}`}
         xmlns="http://www.w3.org/2000/svg"
-        style={{ overflow: 'visible' }} 
+        shapeRendering="crispEdges" // Crucial for pixel-art look
       >
-        {/* Backpack */}
-        <rect x={bpX} y={bpY} width={bpW} height={bpH} fill={backpackColor} rx={bpRx} ry={bpRx} />
-
-        {/* Far Leg - Pants */}
-        <rect x={farLegX} y={legTopY} width={legW} height={pantsH} fill={pantsColor} rx={legRx} ry={legRx}/>
-        {/* Far Leg - Shoe */}
-        <rect x={farLegX} y={legTopY + pantsH} width={legW} height={shoeH} fill={shoeColor} rx={legRx} ry={legRx}/>
+        {/* Backpack - Sits on character's left (viewer's right) */}
+        <rect x={charOffsetX + unitW * 10} y={charOffsetY + unitH * 6} width={unitW * 4} height={unitH * 9} fill={backpackColor} />
         
-        {/* Far Arm - Sleeve */}
-        <rect x={farArmX} y={farArmY} width={armW} height={armH} fill={shirtColor} rx={armRx} ry={armRx}/>
-        {/* Far Arm - Hand */}
-        <circle cx={farHandCx} cy={farHandCy} r={handRadius} fill={skinColor} />
+        {/* Boots */}
+        {/* Left Boot (viewer's left) */}
+        <rect x={charOffsetX + unitW * 4} y={charOffsetY + unitH * 18} width={unitW * 3} height={unitH * 3} fill={bootsColor} />
+        {/* Right Boot */}
+        <rect x={charOffsetX + unitW * 8} y={charOffsetY + unitH * 18} width={unitW * 3} height={unitH * 3} fill={bootsColor} />
 
-        {/* Torso */}
-        <rect x={torsoX} y={torsoY} width={torsoW} height={torsoH} fill={shirtColor} rx={torsoRx} ry={torsoRx}/>
+        {/* Pants */}
+        {/* Left Leg */}
+        <rect x={charOffsetX + unitW * 4} y={charOffsetY + unitH * 13} width={unitW * 3} height={unitH * 5} fill={pantsColor} />
+        {/* Right Leg */}
+        <rect x={charOffsetX + unitW * 8} y={charOffsetY + unitH * 13} width={unitW * 3} height={unitH * 5} fill={pantsColor} />
+
+        {/* Jacket Body */}
+        <rect x={charOffsetX + unitW * 3} y={charOffsetY + unitH * 6} width={unitW * 9} height={unitH * 8} fill={jacketColor} />
         
-        {/* Neck */}
-        <rect x={neckX} y={neckY} width={neckW} height={neckH} fill={skinColor} rx={width*0.03} ry={width*0.03}/>
+        {/* Jacket Details - Vertical Lines */}
+        <rect x={charOffsetX + unitW * 5} y={charOffsetY + unitH * 6} width={unitW * 1} height={unitH * 8} fill={jacketLinesColor} />
+        <rect x={charOffsetX + unitW * 9} y={charOffsetY + unitH * 6} width={unitW * 1} height={unitH * 8} fill={jacketLinesColor} />
+        {/* Jacket Details - Horizontal Lines/Seams */}
+        <rect x={charOffsetX + unitW * 3} y={charOffsetY + unitH * 9} width={unitW * 9} height={unitH * 1} fill={jacketLinesColor} />
+         <rect x={charOffsetX + unitW * 3} y={charOffsetY + unitH * 12} width={unitW * 9} height={unitH * 1} fill={jacketLinesColor} />
 
-        {/* Near Leg - Pants */}
-        <rect x={nearLegX} y={legTopY} width={legW} height={pantsH} fill={pantsColor} rx={legRx} ry={legRx}/>
-        {/* Near Leg - Shoe */}
-        <rect x={nearLegX} y={legTopY + pantsH} width={legW} height={shoeH} fill={shoeColor} rx={legRx} ry={legRx}/>
 
-        {/* Near Arm - Sleeve */}
-        <rect x={nearArmX} y={nearArmY} width={armW} height={armH} fill={shirtColor} rx={armRx} ry={armRx}/>
-        {/* Near Arm - Hand */}
-        <circle cx={nearHandCx} cy={nearHandCy} r={handRadius} fill={skinColor} />
+        {/* Arms - Simple blocks, could be more nuanced if needed */}
+        {/* Left Arm (viewer's left) */}
+        <rect x={charOffsetX + unitW * 1} y={charOffsetY + unitH * 7} width={unitW * 2} height={unitH * 5} fill={jacketColor} />
+        {/* Right Arm - mostly behind backpack strap potentially */}
+        <rect x={charOffsetX + unitW * 12} y={charOffsetY + unitH * 7} width={unitW * 2} height={unitH * 5} fill={jacketColor} />
         
         {/* Head */}
-        <circle cx={headCx} cy={headCy} r={headR} fill={skinColor} />
+        <rect x={charOffsetX + unitW * 4} y={charOffsetY + unitH * 1} width={unitW * 7} height={unitH * 6} fill={skinColor} />
 
         {/* Hair */}
-        <rect x={hairX} y={hairY} width={hairW} height={hairH} fill={hairColor} rx={hairRx} ry={hairRx} />
+        {/* Main hair mass */}
+        <rect x={charOffsetX + unitW * 3} y={charOffsetY + unitH * 0} width={unitW * 9} height={unitH * 4} fill={hairColor} />
+        {/* Sideburns / hair covering ears area */}
+        <rect x={charOffsetX + unitW * 3} y={charOffsetY + unitH * 2} width={unitW * 2} height={unitH * 4} fill={hairColor} />
+        <rect x={charOffsetX + unitW * 10} y={charOffsetY + unitH * 2} width={unitW * 2} height={unitH * 4} fill={hairColor} />
+        {/* Top tuft */}
+        <rect x={charOffsetX + unitW * 6} y={charOffsetY + unitH * -1} width={unitW * 2.5} height={unitH * 2} fill={hairColor} />
+        <rect x={charOffsetX + unitW * 7} y={charOffsetY + unitH * -2} width={unitW * 1.5} height={unitH * 1} fill={hairColor} />
+
+
+        {/* Eyes - simple dots */}
+        <rect x={charOffsetX + unitW * 5.5} y={charOffsetY + unitH * 3.5} width={unitW * 1} height={unitH * 1.5} fill={eyeColor} />
+        <rect x={charOffsetX + unitW * 8.5} y={charOffsetY + unitH * 3.5} width={unitW * 1} height={unitH * 1.5} fill={eyeColor} />
+
+        {/* Backpack Strap - Diagonal across torso */}
+        {/* This is tricky with simple rects, might need multiple or a transform. For simplicity, a thicker blocky strap. */}
+        <rect x={charOffsetX + unitW * 4} y={charOffsetY + unitH * 6} width={unitW * 6} height={unitH * 1.5} fill={backpackStrapColor} transform={`rotate(15 ${charOffsetX + unitW * 7} ${charOffsetY + unitH * 7})`} />
+         {/* Second part of strap for thickness or to connect to backpack */}
+        <rect x={charOffsetX + unitW * 9} y={charOffsetY + unitH * 6.5} width={unitW * 1.5} height={unitH * 4} fill={backpackStrapColor} />
+
+
       </svg>
     </div>
   );
