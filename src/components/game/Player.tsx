@@ -11,20 +11,27 @@ interface PlayerProps {
 }
 
 const Player: React.FC<PlayerProps> = ({ x, y, width, height }) => {
-  // Simple pixel human proportions within the given width and height
-  // These proportions aim to create a discernible head and body
-  const headHeightRatio = 0.35; // Head is ~35% of total height
-  const headWidthRatio = 0.6;  // Head is ~60% of player width
+  // Proportions for a scientist, assuming a 24x24 base for ratio calculations
+  // All parts are centered horizontally within the player's bounding box.
 
-  // Body height will be the remainder, body width will be slightly wider than head
-  const bodyWidthRatio = 0.8; // Body is ~80% of player width
+  const hairHeight = Math.round(height * (4/24));
+  const hairWidth = Math.round(width * (12/24));
 
-  const calculatedHeadHeight = Math.round(height * headHeightRatio);
-  const calculatedHeadWidth = Math.round(width * headWidthRatio);
+  const faceHeight = Math.round(height * (6/24));
+  const faceWidth = Math.round(width * (12/24)); // Same width as hair
 
-  // Ensure total height is met by calculating body height as the remainder
-  const calculatedBodyHeight = height - calculatedHeadHeight; 
-  const calculatedBodyWidth = Math.round(width * bodyWidthRatio);
+  const coatHeight = Math.round(height * (10/24));
+  const coatWidth = Math.round(width * (16/24)); // Lab coat is wider
+
+  const pantsHeight = Math.round(height * (4/24)); // Remaining height
+  const pantsWidth = Math.round(width * (12/24)); // Same width as hair/face
+
+  // Colors
+  const hairAndPantsColor = 'hsl(var(--muted-foreground))'; // Dark grey from theme
+  const faceColor = 'hsl(30, 60%, 80%)'; // Light skin tone
+  const labCoatColor = 'hsl(200, 30%, 95%)'; // Very light grey/off-white, slightly bluish
+
+  const partShadow = '1px 1px 0px hsl(var(--foreground)), -1px 0px 0px hsl(var(--background))';
 
   return (
     <div
@@ -36,32 +43,51 @@ const Player: React.FC<PlayerProps> = ({ x, y, width, height }) => {
         height: `${height}px`,
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center', // Horizontally center head and body within the player's bounding box
-        justifyContent: 'flex-start', // Align parts to the top of the bounding box
+        alignItems: 'center', // Center parts horizontally
+        justifyContent: 'flex-start', // Align parts to the top
         imageRendering: 'pixelated',
       }}
-      aria-label="Player character"
+      aria-label="Player character (scientist)"
     >
-      {/* Head */}
+      {/* Hair */}
       <div
         style={{
-          width: `${calculatedHeadWidth}px`,
-          height: `${calculatedHeadHeight}px`,
-          backgroundColor: 'hsl(var(--player-color))',
-          // Using a shadow similar to obstacles for consistency
-          boxShadow: '1px 1px 0px hsl(var(--foreground)), -1px 0px 0px hsl(var(--background))',
+          width: `${hairWidth}px`,
+          height: `${hairHeight}px`,
+          backgroundColor: hairAndPantsColor,
+          boxShadow: partShadow,
         }}
-        aria-label="Player head"
+        aria-label="Scientist hair"
       />
-      {/* Body */}
+      {/* Face */}
       <div
         style={{
-          width: `${calculatedBodyWidth}px`,
-          height: `${calculatedBodyHeight}px`,
-          backgroundColor: 'hsl(var(--player-color))',
-          boxShadow: '1px 1px 0px hsl(var(--foreground)), -1px 0px 0px hsl(var(--background))',
+          width: `${faceWidth}px`,
+          height: `${faceHeight}px`,
+          backgroundColor: faceColor,
+          boxShadow: partShadow,
         }}
-        aria-label="Player body"
+        aria-label="Scientist face"
+      />
+      {/* Lab Coat */}
+      <div
+        style={{
+          width: `${coatWidth}px`,
+          height: `${coatHeight}px`,
+          backgroundColor: labCoatColor,
+          boxShadow: partShadow,
+        }}
+        aria-label="Scientist lab coat"
+      />
+      {/* Pants */}
+      <div
+        style={{
+          width: `${pantsWidth}px`,
+          height: `${pantsHeight}px`,
+          backgroundColor: hairAndPantsColor,
+          boxShadow: partShadow,
+        }}
+        aria-label="Scientist pants"
       />
     </div>
   );
