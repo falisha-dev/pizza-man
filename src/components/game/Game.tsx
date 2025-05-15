@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 
 const GAME_WIDTH = 600;
 const GAME_HEIGHT = 350;
-const PLAYER_WIDTH = 36; // Increased from 24
-const PLAYER_HEIGHT = 36; // Increased from 24
+const PLAYER_WIDTH = 48; // Increased from 36
+const PLAYER_HEIGHT = 48; // Increased from 36
 const GRAVITY = 0.7;
 const JUMP_STRENGTH = -13;
 const PLAYER_HORIZONTAL_SPEED = 5;
