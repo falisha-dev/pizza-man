@@ -6,70 +6,71 @@
 
 @layer base {
   :root {
-    --background: 220 15% 10%; /* Dark blue-gray for overall page background */
-    --foreground: 200 15% 85%; /* Light grayish blue for text */
+    --background: 25 20% 10%; /* Very dark, slightly saturated orange/brown */
+    --foreground: 30 60% 90%; /* Light, warm off-white/cream */
 
-    --card: 220 15% 15%;
-    --card-foreground: 200 15% 85%;
+    --card: 25 20% 15%; /* Darker orange/brown for cards */
+    --card-foreground: 30 60% 90%; /* Light text on cards */
 
-    --popover: 220 15% 15%;
-    --popover-foreground: 200 15% 85%;
+    --popover: 25 20% 15%; /* Darker orange/brown for popovers */
+    --popover-foreground: 30 60% 90%; /* Light text on popovers */
 
-    --primary: 182 100% 70%; /* Electric Blue */
-    --primary-foreground: 220 20% 10%; /* Dark color for text on primary */
+    --primary: 25 90% 55%; /* Vibrant orange */
+    --primary-foreground: 25 20% 10%; /* Dark text on primary orange */
 
-    --secondary: 210 15% 30%;
-    --secondary-foreground: 200 15% 85%;
+    --secondary: 30 50% 40%; /* Muted, darker orange/brown */
+    --secondary-foreground: 30 60% 90%; /* Light text on secondary */
 
-    --muted: 210 10% 25%;
-    --muted-foreground: 200 10% 65%;
+    --muted: 30 30% 30%; /* Darker gray with a hint of warmth */
+    --muted-foreground: 30 30% 70%; /* Lighter gray with a hint of warmth */
 
-    --accent: 182 100% 70%; /* Electric Blue */
-    --accent-foreground: 220 20% 10%;
+    --accent: 25 90% 55%; /* Vibrant orange (same as primary) */
+    --accent-foreground: 25 20% 10%; /* Dark text on accent */
 
-    --destructive: 0 70% 55%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 70% 55%; /* Standard red for destructive actions */
+    --destructive-foreground: 0 0% 98%; /* Light text on destructive */
 
-    --border: 210 10% 30%;
-    --input: 210 10% 30%;
-    --ring: 182 100% 70%; /* Electric Blue for focus rings */
+    --border: 30 20% 25%; /* Dark warm gray/brown border */
+    --input: 30 20% 25%; /* Dark warm gray/brown for input fields */
+    --ring: 25 90% 55%; /* Vibrant orange for focus rings */
 
     --radius: 0.2rem; /* Smaller radius for a blockier feel */
 
-    /* Custom game colors */
-    --game-area-background: 220 15% 20%;
-    --player-color: hsl(var(--primary));
-    --obstacle-color-1: 210 10% 50%; /* Medium Gray */
-    --obstacle-color-2: 140 40% 45%; /* Sci-fi Green */
-    --obstacle-color-3: 200 50% 55%; /* Sci-fi Blue */
+    /* Custom game colors for orange theme */
+    --game-area-background: 25 25% 20%; /* Dark orange-brown for game area */
+    --player-color: hsl(var(--primary)); /* Player will use the primary orange */
+    --obstacle-color-1: 35 60% 50%; /* Earthy orange for minions */
+    --obstacle-color-2: 45 70% 60%; /* Lighter yellowish-orange for minions */
+    --obstacle-color-3: 20 50% 45%; /* Reddish-brown orange for minions */
   }
 
   .dark {
-    --background: 220 15% 10%;
-    --foreground: 200 15% 85%;
-    --card: 220 15% 15%;
-    --card-foreground: 200 15% 85%;
-    --popover: 220 15% 15%;
-    --popover-foreground: 200 15% 85%;
-    --primary: 182 100% 70%;
-    --primary-foreground: 220 20% 10%;
-    --secondary: 210 15% 30%;
-    --secondary-foreground: 200 15% 85%;
-    --muted: 210 10% 25%;
-    --muted-foreground: 200 10% 65%;
-    --accent: 182 100% 70%;
-    --accent-foreground: 220 20% 10%;
+    --background: 25 20% 10%;
+    --foreground: 30 60% 90%;
+    --card: 25 20% 15%;
+    --card-foreground: 30 60% 90%;
+    --popover: 25 20% 15%;
+    --popover-foreground: 30 60% 90%;
+    --primary: 25 90% 55%;
+    --primary-foreground: 25 20% 10%;
+    --secondary: 30 50% 40%;
+    --secondary-foreground: 30 60% 90%;
+    --muted: 30 30% 30%;
+    --muted-foreground: 30 30% 70%;
+    --accent: 25 90% 55%;
+    --accent-foreground: 25 20% 10%;
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
-    --border: 210 10% 30%;
-    --input: 210 10% 30%;
-    --ring: 182 100% 70%;
+    --border: 30 20% 25%;
+    --input: 30 20% 25%;
+    --ring: 25 90% 55%;
     
-    --game-area-background: 220 15% 20%;
+    /* Custom game colors for orange theme (dark mode) */
+    --game-area-background: 25 25% 20%;
     --player-color: hsl(var(--primary));
-    --obstacle-color-1: 210 10% 50%;
-    --obstacle-color-2: 140 40% 45%;
-    --obstacle-color-3: 200 50% 55%;
+    --obstacle-color-1: 35 60% 50%;
+    --obstacle-color-2: 45 70% 60%;
+    --obstacle-color-3: 20 50% 45%;
   }
 }
 
@@ -79,6 +80,11 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Ensure background image is applied if needed, or remove if solid color is preferred */
+    /* background-image: url('/background-lab.png'); */ /* Commented out to prioritize solid color theme */
+    /* background-size: cover; */
+    /* background-position: center; */
+    /* background-attachment: fixed; */
     font-family: 'Press Start 2P', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
     font-smooth: never;
     -webkit-font-smoothing: none;
