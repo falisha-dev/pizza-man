@@ -234,7 +234,9 @@ const Game: React.FC = () => {
         style={{
           width: `${GAME_WIDTH}px`,
           height: `${GAME_HEIGHT}px`,
-          backgroundColor: 'hsl(var(--card))', // Inner game area background
+          backgroundImage: 'url(/pixelbg.jpg)', // Set the background image
+          backgroundSize: 'cover', // Ensure the image covers the area
+          backgroundPosition: 'center', // Center the image
           borderWidth: '2px', // Ensure border from pixel-box is visible
         }}
         tabIndex={0} // Make it focusable for keyboard events, though global listener is used
