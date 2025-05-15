@@ -19,59 +19,69 @@ const Player: React.FC<PlayerProps> = ({ x, y, width, height }) => {
   const backpackColor = 'hsl(120, 35%, 45%)'; // Forest Green
   const shoeColor = 'hsl(0, 0%, 25%)'; // Dark Gray/Black
 
-  // Proportions based on overall width and height
-  // These are tuned for a character facing roughly right.
-
-  // Backpack (drawn first, so it's behind)
-  const bpW = width * 0.5;
-  const bpH = height * 0.6;
-  const bpX = width * 0.1;
-  const bpY = height * 0.15;
-  const bpRx = width * 0.08;
-
-  // "Far" Leg (slightly behind torso)
-  const legW = width * 0.22;
-  const legH = height * 0.45;
-  const shoeH = legH * 0.2;
-  const pantsH = legH - shoeH;
+  // Proportions for a more defined human look within width x height
   
-  const farLegX = width * 0.3;
-  const legY = height * 0.5; // Starts roughly at bottom of torso
+  // Head Group
+  const headR = width * 0.18; 
+  const headCx = width * 0.6; 
+  const headCy = height * 0.23;
 
-  // "Far" Arm (slightly behind torso)
-  const armW = width * 0.18;
-  const armH = height * 0.38;
-  const handR = armW * 0.6; // Radius for hand
+  const neckW = headR * 0.7;
+  const neckH = height * 0.08;
+  const neckX = headCx - neckW / 2;
+  const neckY = headCy + headR * 0.7; // Neck connects below head center
 
-  const farArmX = width * 0.25;
-  const farArmY = height * 0.25; // Starts from shoulder area
+  const hairW = headR * 2.4;
+  const hairH = headR * 1.8; 
+  const hairX = headCx - hairW / 2;
+  const hairY = headCy - headR * 1.2; 
+  const hairRx = headR * 0.7;
 
   // Torso
-  const torsoW = width * 0.45;
-  const torsoH = height * 0.4;
-  const torsoX = width * 0.28; // Positioned to align with limbs and backpack
-  const torsoY = height * 0.2;
-  const torsoRx = width * 0.05;
+  const torsoW = width * 0.42;
+  const torsoH = height * 0.38;
+  const torsoX = headCx - torsoW * 0.65; 
+  const torsoY = neckY + neckH * 0.6; 
+  const torsoRx = width * 0.08;
 
-  // "Near" Leg (in front of torso from this perspective)
-  const nearLegX = width * 0.5;
+  // Arms
+  const armW = width * 0.16;
+  const armH = height * 0.36;
+  const handRadius = armW * 0.55;
+  const armRx = width * 0.05;
 
-  // Head
-  const headR = width * 0.18;
-  const headCx = torsoX + torsoW * 0.6; // Positioned towards the front of torso
-  const headCy = torsoY - headR * 0.1 + headR; // Sits on top of torso
+  // Far Arm (swings slightly back)
+  const farArmX = torsoX + armW * 0.1;
+  const farArmY = torsoY + torsoH * 0.1;
+  const farHandCx = farArmX + armW / 2;
+  const farHandCy = farArmY + armH;
 
-  // Hair (simple rounded cap style)
-  const hairW = headR * 2.2;
-  const hairH = headR * 1.5;
-  const hairX = headCx - hairW / 2;
-  const hairY = headCy - headR * 1.2; // Sits on top of head
-  const hairRx = headR * 0.5;
+  // Near Arm (swings slightly forward)
+  const nearArmX = torsoX + torsoW - armW * 1.1;
+  const nearArmY = torsoY + torsoH * 0.15;
+  const nearHandCx = nearArmX + armW / 2;
+  const nearHandCy = nearArmY + armH;
+  
+  // Legs
+  const legW = width * 0.19;
+  const legH = height * 0.42;
+  const shoeH = legH * 0.22;
+  const pantsH = legH - shoeH;
+  const legRx = width * 0.05;
+  const legTopY = torsoY + torsoH - legH * 0.15;
 
-  // "Near" Arm (in front of torso)
-  const nearArmX = torsoX + torsoW - armW * 0.7;
-  const nearArmY = height * 0.28;
+  // Far Leg
+  const farLegX = torsoX + torsoW * 0.2;
+  
+  // Near Leg
+  const nearLegX = torsoX + torsoW * 0.55;
 
+  // Backpack
+  const bpW = width * 0.40;
+  const bpH = height * 0.50;
+  const bpX = torsoX - bpW * 0.45; 
+  const bpY = torsoY + torsoH * 0.1;
+  const bpRx = width * 0.1;
 
   return (
     <div
@@ -81,7 +91,6 @@ const Player: React.FC<PlayerProps> = ({ x, y, width, height }) => {
         top: `${y}px`,
         width: `${width}px`,
         height: `${height}px`,
-        // No imageRendering: 'pixelated' for a smoother look
       }}
       aria-label="Player character"
     >
@@ -93,117 +102,39 @@ const Player: React.FC<PlayerProps> = ({ x, y, width, height }) => {
         style={{ overflow: 'visible' }} 
       >
         {/* Backpack */}
-        <rect
-          x={bpX}
-          y={bpY}
-          width={bpW}
-          height={bpH}
-          fill={backpackColor}
-          rx={bpRx}
-          ry={bpRx}
-        />
+        <rect x={bpX} y={bpY} width={bpW} height={bpH} fill={backpackColor} rx={bpRx} ry={bpRx} />
 
         {/* Far Leg - Pants */}
-        <rect
-          x={farLegX}
-          y={legY}
-          width={legW}
-          height={pantsH}
-          fill={pantsColor}
-          rx={width*0.03} ry={width*0.03}
-        />
+        <rect x={farLegX} y={legTopY} width={legW} height={pantsH} fill={pantsColor} rx={legRx} ry={legRx}/>
         {/* Far Leg - Shoe */}
-        <rect
-          x={farLegX}
-          y={legY + pantsH}
-          width={legW}
-          height={shoeH}
-          fill={shoeColor}
-          rx={width*0.03} ry={width*0.03}
-        />
+        <rect x={farLegX} y={legTopY + pantsH} width={legW} height={shoeH} fill={shoeColor} rx={legRx} ry={legRx}/>
         
         {/* Far Arm - Sleeve */}
-        <rect
-          x={farArmX}
-          y={farArmY}
-          width={armW}
-          height={armH}
-          fill={shirtColor}
-          rx={width*0.03} ry={width*0.03}
-        />
+        <rect x={farArmX} y={farArmY} width={armW} height={armH} fill={shirtColor} rx={armRx} ry={armRx}/>
         {/* Far Arm - Hand */}
-        <circle 
-          cx={farArmX + armW / 2} 
-          cy={farArmY + armH} 
-          r={handR/2} 
-          fill={skinColor} 
-        />
+        <circle cx={farHandCx} cy={farHandCy} r={handRadius} fill={skinColor} />
 
         {/* Torso */}
-        <rect
-          x={torsoX}
-          y={torsoY}
-          width={torsoW}
-          height={torsoH}
-          fill={shirtColor}
-          rx={torsoRx}
-          ry={torsoRx}
-        />
+        <rect x={torsoX} y={torsoY} width={torsoW} height={torsoH} fill={shirtColor} rx={torsoRx} ry={torsoRx}/>
+        
+        {/* Neck */}
+        <rect x={neckX} y={neckY} width={neckW} height={neckH} fill={skinColor} rx={width*0.03} ry={width*0.03}/>
 
         {/* Near Leg - Pants */}
-        <rect
-          x={nearLegX}
-          y={legY}
-          width={legW}
-          height={pantsH}
-          fill={pantsColor}
-          rx={width*0.03} ry={width*0.03}
-        />
+        <rect x={nearLegX} y={legTopY} width={legW} height={pantsH} fill={pantsColor} rx={legRx} ry={legRx}/>
         {/* Near Leg - Shoe */}
-        <rect
-          x={nearLegX}
-          y={legY + pantsH}
-          width={legW}
-          height={shoeH}
-          fill={shoeColor}
-          rx={width*0.03} ry={width*0.03}
-        />
+        <rect x={nearLegX} y={legTopY + pantsH} width={legW} height={shoeH} fill={shoeColor} rx={legRx} ry={legRx}/>
 
+        {/* Near Arm - Sleeve */}
+        <rect x={nearArmX} y={nearArmY} width={armW} height={armH} fill={shirtColor} rx={armRx} ry={armRx}/>
+        {/* Near Arm - Hand */}
+        <circle cx={nearHandCx} cy={nearHandCy} r={handRadius} fill={skinColor} />
+        
         {/* Head */}
-        <circle
-          cx={headCx}
-          cy={headCy}
-          r={headR}
-          fill={skinColor}
-        />
+        <circle cx={headCx} cy={headCy} r={headR} fill={skinColor} />
 
         {/* Hair */}
-        <rect
-          x={hairX}
-          y={hairY}
-          width={hairW}
-          height={hairH}
-          fill={hairColor}
-          rx={hairRx}
-          ry={hairRx}
-        />
-        
-        {/* Near Arm - Sleeve */}
-        <rect
-          x={nearArmX}
-          y={nearArmY}
-          width={armW}
-          height={armH}
-          fill={shirtColor}
-          rx={width*0.03} ry={width*0.03}
-        />
-        {/* Near Arm - Hand */}
-        <circle 
-          cx={nearArmX + armW / 2} 
-          cy={nearArmY + armH} 
-          r={handR/2} 
-          fill={skinColor} 
-        />
+        <rect x={hairX} y={hairY} width={hairW} height={hairH} fill={hairColor} rx={hairRx} ry={hairRx} />
       </svg>
     </div>
   );
