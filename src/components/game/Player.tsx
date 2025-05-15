@@ -6,18 +6,19 @@ import type React from 'react';
 interface PlayerProps {
   x: number;
   y: number;
-  width: number; // Overall bounding box width
-  height: number; // Overall bounding box height
+  width: number; // Overall bounding box width (e.g., 48)
+  height: number; // Overall bounding box height (e.g., 48)
 }
 
 const Player: React.FC<PlayerProps> = ({ x, y, width, height }) => {
-  // Colors based on the reference image
+  // Colors based on the previous scientist/pixel character
   const hairColor = 'hsl(10, 70%, 50%)'; // Red-Orange
   const skinColor = 'hsl(30, 60%, 80%)'; // Light Peach
-  const eyeColor = 'hsl(270, 15%, 20%)'; // Dark Purple (like pants accents)
+  const eyeWhiteColor = 'hsl(0, 0%, 100%)';
+  const eyePupilColor = 'hsl(270, 15%, 20%)'; // Dark Purple (like pants accents)
   
   const jacketColor = 'hsl(180, 50%, 60%)'; // Teal
-  const jacketLinesColor = 'hsl(270, 20%, 30%)'; // Darker purple for jacket details
+  // const jacketLinesColor = 'hsl(270, 20%, 30%)'; // Not used in this smooth version
 
   const pantsColor = 'hsl(270, 20%, 30%)'; // Dark Purple
   const bootsColor = 'hsl(270, 20%, 20%)'; // Darker Purple/Blackish
@@ -25,16 +26,9 @@ const Player: React.FC<PlayerProps> = ({ x, y, width, height }) => {
   const backpackColor = 'hsl(30, 30%, 35%)'; // Brown
   const backpackStrapColor = 'hsl(30, 30%, 25%)'; // Darker Brown
 
-  // Define a "pixel unit" relative to the player's overall size.
-  // The reference image character is roughly 16-18 "source pixels" wide and 28-30 "source pixels" tall.
-  // We'll scale these units to fit within the `width` and `height`.
-  // Let's base our drawing on a conceptual grid of roughly 18 units across for width, and 22 for height to maintain aspect.
-  const unitW = width / 18;
-  const unitH = height / 22; // Character is taller than wide
-
-  // Helper to make positioning easier, assuming character is centered
-  const charOffsetX = 0; // If specific horizontal centering is needed within the box
-  const charOffsetY = unitH * 1; // Start drawing a bit lower in the box
+  // ViewBox for easier relative drawing. All coordinates below are % of this.
+  const vbw = 100; 
+  const vbh = 100;
 
   return (
     <div
@@ -48,69 +42,81 @@ const Player: React.FC<PlayerProps> = ({ x, y, width, height }) => {
       aria-label="Player character"
     >
       <svg
-        width={width}
-        height={height}
-        viewBox={`0 0 ${width} ${height}`}
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${vbw} ${vbh}`}
         xmlns="http://www.w3.org/2000/svg"
-        shapeRendering="crispEdges" // Crucial for pixel-art look
       >
-        {/* Backpack - Sits on character's left (viewer's right) */}
-        <rect x={charOffsetX + unitW * 10} y={charOffsetY + unitH * 6} width={unitW * 4} height={unitH * 9} fill={backpackColor} />
+        {/* Backpack - Drawn first to be behind */}
+        <rect x={vbw * 0.58} y={vbh * 0.22} width={vbw * 0.32} height={vbh * 0.48} rx={vbw * 0.06} ry={vbh * 0.06} fill={backpackColor} />
         
         {/* Boots */}
-        {/* Left Boot (viewer's left) */}
-        <rect x={charOffsetX + unitW * 4} y={charOffsetY + unitH * 18} width={unitW * 3} height={unitH * 3} fill={bootsColor} />
-        {/* Right Boot */}
-        <rect x={charOffsetX + unitW * 8} y={charOffsetY + unitH * 18} width={unitW * 3} height={unitH * 3} fill={bootsColor} />
+        {/* Left Boot (viewer's left, character's right) */}
+        <ellipse cx={vbw * 0.30} cy={vbh * 0.90} rx={vbw * 0.13} ry={vbh * 0.09} fill={bootsColor} />
+        {/* Right Boot (viewer's right, character's left) */}
+        <ellipse cx={vbw * 0.56} cy={vbh * 0.90} rx={vbw * 0.13} ry={vbh * 0.09} fill={bootsColor} />
 
-        {/* Pants */}
+        {/* Pants (Legs) */}
         {/* Left Leg */}
-        <rect x={charOffsetX + unitW * 4} y={charOffsetY + unitH * 13} width={unitW * 3} height={unitH * 5} fill={pantsColor} />
+        <rect x={vbw * 0.22} y={vbh * 0.55} width={vbw * 0.16} height={vbh * 0.35} rx={vbw * 0.05} ry={vbh * 0.08} fill={pantsColor} />
         {/* Right Leg */}
-        <rect x={charOffsetX + unitW * 8} y={charOffsetY + unitH * 13} width={unitW * 3} height={unitH * 5} fill={pantsColor} />
-
-        {/* Jacket Body */}
-        <rect x={charOffsetX + unitW * 3} y={charOffsetY + unitH * 6} width={unitW * 9} height={unitH * 8} fill={jacketColor} />
+        <rect x={vbw * 0.48} y={vbh * 0.55} width={vbw * 0.16} height={vbh * 0.35} rx={vbw * 0.05} ry={vbh * 0.08} fill={pantsColor} />
         
-        {/* Jacket Details - Vertical Lines */}
-        <rect x={charOffsetX + unitW * 5} y={charOffsetY + unitH * 6} width={unitW * 1} height={unitH * 8} fill={jacketLinesColor} />
-        <rect x={charOffsetX + unitW * 9} y={charOffsetY + unitH * 6} width={unitW * 1} height={unitH * 8} fill={jacketLinesColor} />
-        {/* Jacket Details - Horizontal Lines/Seams */}
-        <rect x={charOffsetX + unitW * 3} y={charOffsetY + unitH * 9} width={unitW * 9} height={unitH * 1} fill={jacketLinesColor} />
-         <rect x={charOffsetX + unitW * 3} y={charOffsetY + unitH * 12} width={unitW * 9} height={unitH * 1} fill={jacketLinesColor} />
+        {/* Jacket (Torso) */}
+        <ellipse cx={vbw * 0.45} cy={vbh * 0.45} rx={vbw * 0.30} ry={vbh * 0.28} fill={jacketColor} />
+        {/* Lower part for a bit of shape */}
+        <ellipse cx={vbw * 0.45} cy={vbh * 0.50} rx={vbw * 0.32} ry={vbh * 0.25} fill={jacketColor} />
 
-
-        {/* Arms - Simple blocks, could be more nuanced if needed */}
-        {/* Left Arm (viewer's left) */}
-        <rect x={charOffsetX + unitW * 1} y={charOffsetY + unitH * 7} width={unitW * 2} height={unitH * 5} fill={jacketColor} />
-        {/* Right Arm - mostly behind backpack strap potentially */}
-        <rect x={charOffsetX + unitW * 12} y={charOffsetY + unitH * 7} width={unitW * 2} height={unitH * 5} fill={jacketColor} />
+        {/* Arms */}
+        {/* Left Arm (viewer's left, character's right - slightly forward) */}
+        <ellipse cx={vbw * 0.12} cy={vbh * 0.50} rx={vbw * 0.10} ry={vbh * 0.20} fill={jacketColor} />
+        <circle cx={vbw * 0.10} cy={vbh * 0.65} r={vbw * 0.07} fill={skinColor} /> {/* Hand */}
         
+        {/* Right Arm (viewer's right, character's left - slightly back) */}
+        <ellipse cx={vbw * 0.78} cy={vbh * 0.50} rx={vbw * 0.10} ry={vbh * 0.20} fill={jacketColor} />
+        <circle cx={vbw * 0.80} cy={vbh * 0.65} r={vbw * 0.07} fill={skinColor} /> {/* Hand */}
+
         {/* Head */}
-        <rect x={charOffsetX + unitW * 4} y={charOffsetY + unitH * 1} width={unitW * 7} height={unitH * 6} fill={skinColor} />
+        <circle cx={vbw * 0.45} cy={vbh * 0.23} r={vbh * 0.19} fill={skinColor} />
 
         {/* Hair */}
-        {/* Main hair mass */}
-        <rect x={charOffsetX + unitW * 3} y={charOffsetY + unitH * 0} width={unitW * 9} height={unitH * 4} fill={hairColor} />
-        {/* Sideburns / hair covering ears area */}
-        <rect x={charOffsetX + unitW * 3} y={charOffsetY + unitH * 2} width={unitW * 2} height={unitH * 4} fill={hairColor} />
-        <rect x={charOffsetX + unitW * 10} y={charOffsetY + unitH * 2} width={unitW * 2} height={unitH * 4} fill={hairColor} />
-        {/* Top tuft */}
-        <rect x={charOffsetX + unitW * 6} y={charOffsetY + unitH * -1} width={unitW * 2.5} height={unitH * 2} fill={hairColor} />
-        <rect x={charOffsetX + unitW * 7} y={charOffsetY + unitH * -2} width={unitW * 1.5} height={unitH * 1} fill={hairColor} />
+        <path d={`
+            M ${vbw * 0.22} ${vbh * 0.25} 
+            C ${vbw * 0.15} ${vbh * 0.02}, ${vbw * 0.75} ${vbh * 0.02}, ${vbw * 0.68} ${vbh * 0.25}
+            A ${vbh * 0.19} ${vbh * 0.19} 0 0 0 ${vbw * 0.22} ${vbh * 0.25} Z
+        `} fill={hairColor} />
+        {/* Hair tuft */}
+        <path d={`
+            M ${vbw * 0.40} ${vbh * 0.03} 
+            Q ${vbw * 0.45} ${vbh * -0.02}, ${vbw * 0.50} ${vbh * 0.03} 
+            Q ${vbw * 0.45} ${vbh * 0.06}, ${vbw * 0.40} ${vbh * 0.03} Z
+        `} fill={hairColor} />
+         <path d={`
+            M ${vbw * 0.48} ${vbh * 0.01} 
+            Q ${vbw * 0.53} ${vbh * -0.04}, ${vbw * 0.58} ${vbh * 0.01} 
+            Q ${vbw * 0.53} ${vbh * 0.04}, ${vbw * 0.48} ${vbh * 0.01} Z
+        `} fill={hairColor} />
 
 
-        {/* Eyes - simple dots */}
-        <rect x={charOffsetX + unitW * 5.5} y={charOffsetY + unitH * 3.5} width={unitW * 1} height={unitH * 1.5} fill={eyeColor} />
-        <rect x={charOffsetX + unitW * 8.5} y={charOffsetY + unitH * 3.5} width={unitW * 1} height={unitH * 1.5} fill={eyeColor} />
+        {/* Eyes */}
+        {/* Left Eye */}
+        <ellipse cx={vbw * 0.35} cy={vbh * 0.23} rx={vbw * 0.055} ry={vbh * 0.065} fill={eyeWhiteColor} />
+        <ellipse cx={vbw * 0.36} cy={vbh * 0.24} rx={vbw * 0.025} ry={vbh * 0.035} fill={eyePupilColor} />
+        {/* Right Eye */}
+        <ellipse cx={vbw * 0.55} cy={vbh * 0.23} rx={vbw * 0.055} ry={vbh * 0.065} fill={eyeWhiteColor} />
+        <ellipse cx={vbw * 0.56} cy={vbh * 0.24} rx={vbw * 0.025} ry={vbh * 0.035} fill={eyePupilColor} />
+        
+        {/* Mouth - small smile */}
+        <path d={`M ${vbw * 0.42} ${vbh * 0.32} Q ${vbw * 0.45} ${vbh * 0.35} ${vbw * 0.48} ${vbh * 0.32}`} stroke={eyePupilColor} strokeWidth={vbw * 0.012} fill="none" />
 
-        {/* Backpack Strap - Diagonal across torso */}
-        {/* This is tricky with simple rects, might need multiple or a transform. For simplicity, a thicker blocky strap. */}
-        <rect x={charOffsetX + unitW * 4} y={charOffsetY + unitH * 6} width={unitW * 6} height={unitH * 1.5} fill={backpackStrapColor} transform={`rotate(15 ${charOffsetX + unitW * 7} ${charOffsetY + unitH * 7})`} />
-         {/* Second part of strap for thickness or to connect to backpack */}
-        <rect x={charOffsetX + unitW * 9} y={charOffsetY + unitH * 6.5} width={unitW * 1.5} height={unitH * 4} fill={backpackStrapColor} />
-
-
+        {/* Backpack Strap - across chest, drawn on top of jacket */}
+         <path 
+          d={`M ${vbw * 0.20},${vbh * 0.30} C ${vbw * 0.35},${vbh * 0.38} ${vbw * 0.55},${vbh * 0.60} ${vbw * 0.75},${vbh * 0.55}`} 
+          stroke={backpackStrapColor} 
+          strokeWidth={vbw * 0.06} 
+          fill="none" 
+          strokeLinecap="round"
+        />
       </svg>
     </div>
   );
