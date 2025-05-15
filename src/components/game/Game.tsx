@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 
 const GAME_WIDTH = 600;
 const GAME_HEIGHT = 350;
-const PLAYER_WIDTH = 24;
-const PLAYER_HEIGHT = 24;
+const PLAYER_WIDTH = 36; // Increased from 24
+const PLAYER_HEIGHT = 36; // Increased from 24
 const GRAVITY = 0.7;
 const JUMP_STRENGTH = -13;
 const PLAYER_HORIZONTAL_SPEED = 5;
@@ -103,14 +103,18 @@ const Game: React.FC = () => {
     const width = OBSTACLE_MIN_WIDTH + Math.random() * (OBSTACLE_MAX_WIDTH - OBSTACLE_MIN_WIDTH);
     const height = OBSTACLE_MIN_HEIGHT + Math.random() * (OBSTACLE_MAX_HEIGHT - OBSTACLE_MIN_HEIGHT);
     const type = Math.random() > 0.3 ? 'ground' : 'floating';
-    const y = type === 'ground' ? GAME_HEIGHT - height : GAME_HEIGHT - height - PLAYER_HEIGHT - Math.random() * PLAYER_HEIGHT * 1.5;
+    // Adjust floating obstacle y calculation based on player height to ensure they can be jumped
+    const floatingObstacleBaseY = GAME_HEIGHT - height - PLAYER_HEIGHT;
+    const y = type === 'ground' 
+      ? GAME_HEIGHT - height 
+      : floatingObstacleBaseY - Math.random() * PLAYER_HEIGHT * 1.2; // slightly adjusted factor
     
     setObstacles(prev => [
       ...prev,
       {
         id: `obs-${Date.now()}-${Math.random()}`,
         x: GAME_WIDTH,
-        y,
+        y: Math.max(0, y), // Ensure y is not negative
         width,
         height,
         color: obstacleColors[Math.floor(Math.random() * obstacleColors.length)],
@@ -169,7 +173,7 @@ const Game: React.FC = () => {
     }
     
     setPlayerPosition({ x: newPlayerX, y: newPlayerY });
-    setPlayerVelocity({ vx: 0, vy: newPlayerVy }); // vx is not really used here, could be removed
+    setPlayerVelocity({ vx: 0, vy: newPlayerVy });
 
     // Obstacle Management
     if (timestamp - lastObstacleSpawnTimeRef.current > obstacleSpawnInterval) {
