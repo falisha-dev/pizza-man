@@ -319,10 +319,10 @@ const Game: React.FC = () => {
     gameLoopRef.current = requestAnimationFrame(gameLoop);
   }, [
       gameRunning, gameOver, playerWorldX, playerPositionY, playerVelocityY, isJumping, 
-      obstacles, spawnObstacle, pizzas, spawnPizza, 
+      obstacles, pizzas, // spawnObstacle and spawnPizza are stable due to useCallback with dependencies
       obstacleSpeed, obstacleSpawnInterval, pizzaSpawnInterval, 
-      milesCovered, // pizzasCollected is not a dependency for gameLoop, it's a result
-      worldScrollX, spawnPizza, spawnObstacle // Ensure spawn functions are stable or listed
+      milesCovered, 
+      worldScrollX, spawnPizza, spawnObstacle
   ]);
 
   useEffect(() => {
@@ -344,11 +344,11 @@ const Game: React.FC = () => {
     backgroundPositionY: 'center',
     backgroundPositionX: `-${worldScrollX % GAME_WIDTH}px`,
     backgroundSize: `auto ${GAME_HEIGHT}px`,
-    borderWidth: '2px',
+    // borderWidth: '2px', // Removed as pixel-box class handles border
   };
 
   return (
-    <div className="flex flex-col items-center p-2 md:p-4 rounded-md pixel-box bg-[hsl(var(--game-area-background))]">
+    <div className="flex flex-col items-center p-2 md:p-4 rounded-md pixel-box"> {/* Removed bg-[hsl(var(--game-area-background))] */}
       <div className="flex justify-between w-full mb-2 text-sm md:text-base px-1">
         <p className="pixel-text">Pizzas: {pizzasCollected}</p>
         <p className="pixel-text">Miles: {milesCovered}</p>
