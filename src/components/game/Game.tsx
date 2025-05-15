@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 
 const GAME_WIDTH = 600;
 const GAME_HEIGHT = 350;
-const PLAYER_WIDTH = 48; // Increased from 36
-const PLAYER_HEIGHT = 48; // Increased from 36
+const PLAYER_WIDTH = 48;
+const PLAYER_HEIGHT = 48;
 const GRAVITY = 0.7;
 const JUMP_STRENGTH = -13;
 const PLAYER_HORIZONTAL_SPEED = 5;
@@ -40,6 +40,8 @@ const obstacleColors = [
   'hsl(var(--obstacle-color-3))',
 ];
 
+const PLAYER_ANIMATION_INTERVAL = 150; // ms per frame
+
 const Game: React.FC = () => {
   const [playerPosition, setPlayerPosition] = useState({ x: 50, y: GROUND_Y });
   const [playerVelocity, setPlayerVelocity] = useState({ vx: 0, vy: 0 });
@@ -52,6 +54,10 @@ const Game: React.FC = () => {
 
   const [obstacleSpeed, setObstacleSpeed] = useState(initialObstacleSpeed);
   const [obstacleSpawnInterval, setObstacleSpawnInterval] = useState(initialObstacleSpawnInterval);
+
+  const [playerAnimationFrame, setPlayerAnimationFrame] = useState(0); // 0: standing, 1: walk1, 2: walk2
+  const [isMovingHorizontally, setIsMovingHorizontally] = useState(false);
+  const playerAnimationTimerRef = useRef<NodeJS.Timeout>();
 
   const gameAreaRef = useRef<HTMLDivElement>(null);
   const keysPressed = useRef<{ [key: string]: boolean }>({});
@@ -72,11 +78,14 @@ const Game: React.FC = () => {
     setObstacleSpawnInterval(initialObstacleSpawnInterval);
     lastObstacleSpawnTimeRef.current = 0;
     keysPressed.current = {};
+    setPlayerAnimationFrame(0);
+    setIsMovingHorizontally(false);
+    if (playerAnimationTimerRef.current) clearInterval(playerAnimationTimerRef.current);
     if (scoreIntervalRef.current) clearInterval(scoreIntervalRef.current);
   }, []);
 
   useEffect(() => {
-    resetGame(); // Initialize game on mount
+    resetGame();
   }, [resetGame]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -98,23 +107,41 @@ const Game: React.FC = () => {
       window.removeEventListener('keyup', handleKeyUp);
     };
   }, [handleKeyDown, handleKeyUp]);
+  
+  // Player Animation Effect
+  useEffect(() => {
+    if (isMovingHorizontally && !gameOver && gameRunning) {
+      playerAnimationTimerRef.current = setInterval(() => {
+        setPlayerAnimationFrame(prevFrame => {
+          if (prevFrame === 0) return 1; // From standing to walk1
+          return prevFrame === 1 ? 2 : 1; // Toggle between walk1 and walk2
+        });
+      }, PLAYER_ANIMATION_INTERVAL);
+    } else {
+      if (playerAnimationTimerRef.current) clearInterval(playerAnimationTimerRef.current);
+      setPlayerAnimationFrame(0); // Standing frame
+    }
+    return () => {
+      if (playerAnimationTimerRef.current) clearInterval(playerAnimationTimerRef.current);
+    };
+  }, [isMovingHorizontally, gameOver, gameRunning]);
+
 
   const spawnObstacle = useCallback(() => {
     const width = OBSTACLE_MIN_WIDTH + Math.random() * (OBSTACLE_MAX_WIDTH - OBSTACLE_MIN_WIDTH);
     const height = OBSTACLE_MIN_HEIGHT + Math.random() * (OBSTACLE_MAX_HEIGHT - OBSTACLE_MIN_HEIGHT);
     const type = Math.random() > 0.3 ? 'ground' : 'floating';
-    // Adjust floating obstacle y calculation based on player height to ensure they can be jumped
     const floatingObstacleBaseY = GAME_HEIGHT - height - PLAYER_HEIGHT;
     const y = type === 'ground' 
       ? GAME_HEIGHT - height 
-      : floatingObstacleBaseY - Math.random() * PLAYER_HEIGHT * 1.2; // slightly adjusted factor
+      : floatingObstacleBaseY - Math.random() * PLAYER_HEIGHT * 1.2;
     
     setObstacles(prev => [
       ...prev,
       {
         id: `obs-${Date.now()}-${Math.random()}`,
         x: GAME_WIDTH,
-        y: Math.max(0, y), // Ensure y is not negative
+        y: Math.max(0, y),
         width,
         height,
         color: obstacleColors[Math.floor(Math.random() * obstacleColors.length)],
@@ -146,13 +173,18 @@ const Game: React.FC = () => {
 
     // Player Horizontal Movement
     let newPlayerX = playerPosition.x;
+    let currentlyMovingHorizontally = false;
     if (keysPressed.current['ArrowLeft'] || keysPressed.current['KeyA']) {
       newPlayerX -= PLAYER_HORIZONTAL_SPEED;
+      currentlyMovingHorizontally = true;
     }
     if (keysPressed.current['ArrowRight'] || keysPressed.current['KeyD']) {
       newPlayerX += PLAYER_HORIZONTAL_SPEED;
+      currentlyMovingHorizontally = true;
     }
     newPlayerX = Math.max(0, Math.min(GAME_WIDTH - PLAYER_WIDTH, newPlayerX));
+    setIsMovingHorizontally(currentlyMovingHorizontally);
+
 
     // Player Vertical Movement (Jumping & Gravity)
     let newPlayerY = playerPosition.y;
@@ -203,7 +235,6 @@ const Game: React.FC = () => {
       }
     }
     
-    // Level Up
     if (score > 0 && score % LEVEL_UP_SCORE_INTERVAL === 0 && level === Math.floor(score / LEVEL_UP_SCORE_INTERVAL) ) {
         setLevel(l => l + 1);
         setObstacleSpeed(s => s + 0.2);
@@ -211,7 +242,10 @@ const Game: React.FC = () => {
     }
 
     gameLoopRef.current = requestAnimationFrame(gameLoop);
-  }, [gameRunning, gameOver, playerPosition, playerVelocity.vy, isJumping, obstacles, spawnObstacle, obstacleSpeed, obstacleSpawnInterval, score, level]);
+  }, [
+      gameRunning, gameOver, playerPosition, playerVelocity.vy, isJumping, 
+      obstacles, spawnObstacle, obstacleSpeed, obstacleSpawnInterval, score, level
+  ]);
 
 
   useEffect(() => {
@@ -238,18 +272,20 @@ const Game: React.FC = () => {
         style={{
           width: `${GAME_WIDTH}px`,
           height: `${GAME_HEIGHT}px`,
-          backgroundImage: 'url(/pixelbg.jpg)', // Set the background image
-          backgroundSize: 'cover', // Ensure the image covers the area
-          backgroundPosition: 'center', // Center the image
-          borderWidth: '2px', // Ensure border from pixel-box is visible
+          backgroundImage: 'url(/pixelbg.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          borderWidth: '2px',
         }}
-        tabIndex={0} // Make it focusable for keyboard events, though global listener is used
+        tabIndex={0}
       >
         <PlayerComponent
           x={playerPosition.x}
           y={playerPosition.y}
           width={PLAYER_WIDTH}
           height={PLAYER_HEIGHT}
+          animationFrame={playerAnimationFrame}
+          isMoving={isMovingHorizontally}
         />
         {obstacles.map(obs => (
           <ObstacleComponent
