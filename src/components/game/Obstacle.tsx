@@ -12,14 +12,25 @@ interface ObstacleProps {
 }
 
 const Obstacle: React.FC<ObstacleProps> = ({ x, y, width, height, color }) => {
-  // Define conceptual units for drawing the minion, similar to Player.tsx
-  // Minion is conceptually 10 units wide and 12 units tall.
-  const unitW = width / 10;
-  const unitH = height / 12;
+  // Define a viewBox that allows for a typical minion proportion (taller than wide)
+  // Let's use a conceptual 24 units wide by 30 units tall for drawing
+  const viewBoxWidth = 24;
+  const viewBoxHeight = 30;
 
-  // Colors for eye parts
-  const eyeScleraColor = 'hsl(var(--card-foreground))'; // A light color
-  const eyePupilColor = 'hsl(var(--background))';    // A dark color
+  // Colors for goggle and eye (these will be standard for all minions)
+  const goggleStrapColor = 'hsl(0, 0%, 20%)'; // Dark gray
+  const goggleLensFrameColor = 'hsl(0, 0%, 75%)'; // Silver/Light gray
+  const eyeScleraColor = 'hsl(0, 0%, 100%)'; // White
+  const eyePupilColor = 'hsl(0, 0%, 10%)';   // Black
+  const mouthColor = 'hsl(0, 0%, 10%)'; // Black
+
+  // Calculate unit sizes based on the viewBox and actual component dimensions
+  // This helps in scaling the drawing if width/height props change
+  // However, for consistent minion shape, we might primarily use the viewBox
+  // and let the SVG scale within the div.
+
+  // For positioning legs to imply walking, one leg might be slightly forward
+  // We'll simplify this for a static pose that still suggests legs.
 
   return (
     <div
@@ -29,63 +40,42 @@ const Obstacle: React.FC<ObstacleProps> = ({ x, y, width, height, color }) => {
         top: `${y}px`,
         width: `${width}px`,
         height: `${height}px`,
-        // backgroundColor: color, // Removed, SVG will fill the shape
+        // The existing box shadow creates a pixel-style border around the smooth SVG
         boxShadow: '1px 1px 0px hsl(var(--foreground)), -1px -1px 0px hsl(var(--background))',
-        imageRendering: 'pixelated',
+        imageRendering: 'pixelated', // Applies to the container, SVG content can be smooth
       }}
       aria-label="Minion obstacle"
     >
       <svg
         width="100%"
         height="100%"
-        viewBox={`0 0 ${width} ${height}`} // Use actual width/height for viewBox if units are scaled
+        viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
         xmlns="http://www.w3.org/2000/svg"
-        shapeRendering="crispEdges" // Crucial for pixel-art look
+        preserveAspectRatio="xMidYMid meet" // Ensures minion scales nicely
       >
-        {/* Minion Body */}
-        <rect
-          x={unitW * 1}
-          y={unitH * 0}
-          width={unitW * 8}
-          height={unitH * 8.5}
-          fill={color}
-        />
-
-        {/* Minion Legs */}
+        {/* Minion Legs (simple rounded rectangles) */}
         {/* Left Leg */}
-        <rect
-          x={unitW * 1.5}
-          y={unitH * 8.5}
-          width={unitW * 3}
-          height={unitH * 3.5}
-          fill={color}
-        />
+        <rect x={viewBoxWidth * 0.25 - 2} y={viewBoxHeight * 0.75} width="4" height="8" rx="2" ry="2" fill={color} />
         {/* Right Leg */}
-        <rect
-          x={unitW * 5.5}
-          y={unitH * 8.5}
-          width={unitW * 3}
-          height={unitH * 3.5}
-          fill={color}
-        />
+        <rect x={viewBoxWidth * 0.75 - 2} y={viewBoxHeight * 0.75} width="4" height="8" rx="2" ry="2" fill={color} />
 
-        {/* Minion Eye */}
-        {/* Sclera (white part) - slightly larger for a border */}
-        <rect
-          x={unitW * 3}
-          y={unitH * 2}
-          width={unitW * 4}
-          height={unitH * 3.5}
-          fill={eyeScleraColor}
-        />
-        {/* Pupil (black part) */}
-        <rect
-          x={unitW * 4}
-          y={unitH * 2.5}
-          width={unitW * 2}
-          height={unitH * 2.5}
-          fill={eyePupilColor}
-        />
+        {/* Minion Body (Ellipse) */}
+        <ellipse cx={viewBoxWidth / 2} cy={viewBoxHeight / 2} rx={viewBoxWidth / 2 * 0.9} ry={viewBoxHeight / 2 * 0.85} fill={color} />
+
+        {/* Goggle Strap */}
+        <rect x="0" y={viewBoxHeight * 0.32} width={viewBoxWidth} height={viewBoxHeight * 0.15} fill={goggleStrapColor} />
+        
+        {/* Goggle Lens Frame (Centered) */}
+        <circle cx={viewBoxWidth / 2} cy={viewBoxHeight * 0.4} r={viewBoxWidth * 0.22} fill={goggleLensFrameColor} />
+        
+        {/* Eye Sclera (White part) */}
+        <circle cx={viewBoxWidth / 2} cy={viewBoxHeight * 0.4} r={viewBoxWidth * 0.18} fill={eyeScleraColor} />
+        
+        {/* Eye Pupil */}
+        <circle cx={viewBoxWidth / 2} cy={viewBoxHeight * 0.42} r={viewBoxWidth * 0.09} fill={eyePupilColor} />
+
+        {/* Mouth (simple curve) */}
+        <path d={`M ${viewBoxWidth * 0.35} ${viewBoxHeight * 0.62} Q ${viewBoxWidth / 2} ${viewBoxHeight * 0.70} ${viewBoxWidth * 0.65} ${viewBoxHeight * 0.62}`} stroke={mouthColor} strokeWidth="1" fill="none" />
       </svg>
     </div>
   );
