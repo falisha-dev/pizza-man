@@ -349,7 +349,7 @@ const Game: React.FC = () => {
   const gameAreaStyle: React.CSSProperties = {
     width: `${GAME_WIDTH}px`,
     height: `${GAME_HEIGHT}px`,
-    backgroundImage: 'url(/pixelbg.jpg)',
+    backgroundImage: 'url(/fute.png)',
     backgroundRepeat: 'repeat-x',
     backgroundPositionY: 'center',
     backgroundPositionX: `-${worldScrollX % GAME_WIDTH}px`, // Ensure GAME_WIDTH is appropriate for pixelbg.jpg width or use a different repeat logic

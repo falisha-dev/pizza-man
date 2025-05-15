@@ -11,7 +11,7 @@ const pressStart2P = Press_Start_2P({
 });
 
 export const metadata: Metadata = {
-  title: 'Lab Escape',
+  title: 'Pizza Man',
   description: 'A pixel art web game set in a sci-fi lab.',
 };
 
@@ -21,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${pressStart2P.variable} dark`}>
+    <html lang="en" className={`${pressStart2P.variable} dark`} suppressHydrationWarning={true}>
       <body className={`font-sans antialiased`} suppressHydrationWarning={true}>
         {children}
         <Toaster />

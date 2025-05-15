@@ -15,11 +15,11 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStartGame }) => {
     <div className="flex flex-col items-center justify-center text-center p-4 md:p-8">
       <Card className="w-full max-w-lg pixel-box bg-[hsl(var(--game-area-background))]">
         <CardHeader>
-          <CardTitle className="text-2xl sm:text-3xl md:text-4xl pixel-text text-primary">Prepare for Escape!</CardTitle>
+          <CardTitle className="text-2xl sm:text-3xl md:text-4xl pixel-text text-primary">Bitcoin Pizza Day!</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 md:space-y-4">
           <p className="text-xs sm:text-sm md:text-base pixel-text text-foreground">
-            You are a daring scientist, code-named "The Pizza Runner", making a mad dash for freedom from the top-secret "Flavor Labs"!
+            Story about the pizza day here
           </p>
           <p className="text-xs sm:text-sm md:text-base pixel-text text-foreground">
             After a miscalculated experiment involving radioactive anchovies and a particle accelerator, you've accidentally created the galaxy's most delicious pizza.
