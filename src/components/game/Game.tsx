@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import PlayerComponent from './Player';
 import ObstacleComponent from './Obstacle';
+import PizzaComponent from './Pizza'; // Import PizzaComponent
 import { Button } from '@/components/ui/button';
 
 const GAME_WIDTH = 600;
@@ -21,19 +22,30 @@ const OBSTACLE_MAX_WIDTH = 48;
 const OBSTACLE_MIN_HEIGHT = 24;
 const OBSTACLE_MAX_HEIGHT = 72;
 
-const LEVEL_UP_SCORE_INTERVAL = 50;
+const PIZZA_WIDTH = 28;
+const PIZZA_HEIGHT = 28;
+
+const initialObstacleSpeed = 2.5;
+const initialObstacleSpawnInterval = 2200; // ms
+const INITIAL_PIZZA_SPAWN_INTERVAL = 2800; // ms
+const DIFFICULTY_UPDATE_MILESTONE = 75; // Increase difficulty every 75 miles
 
 interface ObstacleState {
   id: string;
-  worldX: number; // X position in the game world
+  worldX: number;
   y: number;
   width: number;
   height: number;
   color: string;
 }
 
-const initialObstacleSpeed = 2.5;
-const initialObstacleSpawnInterval = 2200; // ms
+interface PizzaState {
+  id: string;
+  worldX: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 const obstacleColors = [
   'hsl(var(--obstacle-color-1))',
@@ -50,13 +62,17 @@ const Game: React.FC = () => {
   const [playerVelocityY, setPlayerVelocityY] = useState(0);
   const [isJumping, setIsJumping] = useState(false);
   const [obstacles, setObstacles] = useState<ObstacleState[]>([]);
-  const [score, setScore] = useState(0);
-  const [level, setLevel] = useState(1);
+  const [pizzas, setPizzas] = useState<PizzaState[]>([]); // New state for pizzas
+
+  const [pizzasCollected, setPizzasCollected] = useState(0); // Score is now pizzas collected
+  const [milesCovered, setMilesCovered] = useState(0); // Level is now miles covered
+
   const [gameOver, setGameOver] = useState(false);
   const [gameRunning, setGameRunning] = useState(true);
 
   const [obstacleSpeed, setObstacleSpeed] = useState(initialObstacleSpeed);
   const [obstacleSpawnInterval, setObstacleSpawnInterval] = useState(initialObstacleSpawnInterval);
+  const [pizzaSpawnInterval, setPizzaSpawnInterval] = useState(INITIAL_PIZZA_SPAWN_INTERVAL); // New state
 
   const [playerAnimationFrame, setPlayerAnimationFrame] = useState(0);
   const [isMovingHorizontally, setIsMovingHorizontally] = useState(false);
@@ -66,10 +82,10 @@ const Game: React.FC = () => {
   const keysPressed = useRef<{ [key: string]: boolean }>({});
   const gameLoopRef = useRef<number>();
   const lastObstacleSpawnTimeRef = useRef(0);
-  const scoreIntervalRef = useRef<NodeJS.Timeout>();
+  const lastPizzaSpawnTimeRef = useRef(0); // New ref for pizza spawning
+  const milesIntervalRef = useRef<NodeJS.Timeout>(); // Renamed from scoreIntervalRef
+  const lastDifficultyUpdateMileRef = useRef(0); // For difficulty scaling
 
-  // Calculate how much the world has scrolled based on player's world position
-  // Ensures player appears at PLAYER_TARGET_SCREEN_X
   const worldScrollX = playerWorldX - PLAYER_TARGET_SCREEN_X;
 
   const resetGame = useCallback(() => {
@@ -78,18 +94,22 @@ const Game: React.FC = () => {
     setPlayerVelocityY(0);
     setIsJumping(false);
     setObstacles([]);
-    setScore(0);
-    setLevel(1);
+    setPizzas([]); // Reset pizzas
+    setPizzasCollected(0); // Reset pizza score
+    setMilesCovered(0); // Reset miles
     setGameOver(false);
     setGameRunning(true);
     setObstacleSpeed(initialObstacleSpeed);
     setObstacleSpawnInterval(initialObstacleSpawnInterval);
+    setPizzaSpawnInterval(INITIAL_PIZZA_SPAWN_INTERVAL); // Reset pizza spawn interval
     lastObstacleSpawnTimeRef.current = 0;
+    lastPizzaSpawnTimeRef.current = 0; // Reset pizza spawn time
     keysPressed.current = {};
     setPlayerAnimationFrame(0);
     setIsMovingHorizontally(false);
     if (playerAnimationTimerRef.current) clearInterval(playerAnimationTimerRef.current);
-    if (scoreIntervalRef.current) clearInterval(scoreIntervalRef.current);
+    if (milesIntervalRef.current) clearInterval(milesIntervalRef.current);
+    lastDifficultyUpdateMileRef.current = 0; // Reset difficulty tracker
   }, []);
 
   useEffect(() => {
@@ -133,7 +153,6 @@ const Game: React.FC = () => {
     };
   }, [isMovingHorizontally, gameOver, gameRunning]);
 
-
   const spawnObstacle = useCallback(() => {
     const width = OBSTACLE_MIN_WIDTH + Math.random() * (OBSTACLE_MAX_WIDTH - OBSTACLE_MIN_WIDTH);
     const height = OBSTACLE_MIN_HEIGHT + Math.random() * (OBSTACLE_MAX_HEIGHT - OBSTACLE_MIN_HEIGHT);
@@ -143,7 +162,7 @@ const Game: React.FC = () => {
       ? GAME_HEIGHT - height 
       : floatingObstacleBaseY - Math.random() * PLAYER_HEIGHT * 1.2;
     
-    const spawnWorldX = worldScrollX + GAME_WIDTH + Math.random() * 100; // Spawn off-screen to the right
+    const spawnWorldX = worldScrollX + GAME_WIDTH + Math.random() * 100;
 
     setObstacles(prev => [
       ...prev,
@@ -156,23 +175,43 @@ const Game: React.FC = () => {
         color: obstacleColors[Math.floor(Math.random() * obstacleColors.length)],
       },
     ]);
+  }, [worldScrollX]);
+
+  const spawnPizza = useCallback(() => {
+    const width = PIZZA_WIDTH;
+    const height = PIZZA_HEIGHT;
+    const minY = PLAYER_HEIGHT * 0.7; // Pizzas spawn at a reachable height
+    const maxY = GROUND_Y - height - PLAYER_HEIGHT * 0.5; // Not too high, not on ground
+    const yPosition = Math.random() * (maxY - minY) + minY;
+    
+    const spawnWorldX = worldScrollX + GAME_WIDTH + Math.random() * 200 + 50; // Spawn off-screen right, slightly further than obstacles
+
+    setPizzas(prev => [
+      ...prev,
+      {
+        id: `pizza-${Date.now()}-${Math.random()}`,
+        worldX: spawnWorldX,
+        y: Math.max(minY, Math.min(yPosition, maxY)), // Ensure Y is within reasonable bounds
+        width,
+        height,
+      },
+    ]);
   }, [worldScrollX]); 
   
-  useEffect(() => {
+  useEffect(() => { // For Miles Covered
     if (!gameRunning || gameOver) {
-      if (scoreIntervalRef.current) clearInterval(scoreIntervalRef.current);
+      if (milesIntervalRef.current) clearInterval(milesIntervalRef.current);
       return;
     }
     
-    scoreIntervalRef.current = setInterval(() => {
-      setScore(s => s + 1);
+    milesIntervalRef.current = setInterval(() => {
+      setMilesCovered(m => m + 1); // Each increment is a "mile"
     }, 100);
 
     return () => {
-      if (scoreIntervalRef.current) clearInterval(scoreIntervalRef.current);
+      if (milesIntervalRef.current) clearInterval(milesIntervalRef.current);
     }
   }, [gameRunning, gameOver]);
-
 
   const gameLoop = useCallback((timestamp: number) => {
     if (!gameRunning || gameOver) {
@@ -180,7 +219,6 @@ const Game: React.FC = () => {
       return;
     }
 
-    // Player Horizontal Movement (updates playerWorldX)
     let newPlayerWorldX = playerWorldX;
     let currentlyMovingHorizontally = false;
     if (keysPressed.current['ArrowLeft'] || keysPressed.current['KeyA']) {
@@ -191,13 +229,10 @@ const Game: React.FC = () => {
       newPlayerWorldX += PLAYER_HORIZONTAL_SPEED;
       currentlyMovingHorizontally = true;
     }
-    // Prevent player from moving left past their target screen X (worldScrollX won't go < 0)
     newPlayerWorldX = Math.max(PLAYER_TARGET_SCREEN_X, newPlayerWorldX);
     setPlayerWorldX(newPlayerWorldX);
     setIsMovingHorizontally(currentlyMovingHorizontally);
 
-
-    // Player Vertical Movement (Jumping & Gravity)
     let newPlayerY = playerPositionY;
     let newPlayerVy = playerVelocityY;
 
@@ -223,24 +258,48 @@ const Game: React.FC = () => {
       spawnObstacle();
       lastObstacleSpawnTimeRef.current = timestamp;
     }
-
     setObstacles(prevObstacles =>
       prevObstacles
-        .map(obs => ({ ...obs, worldX: obs.worldX - obstacleSpeed })) // Move obstacles in the world
-        .filter(obs => (obs.worldX - worldScrollX) + obs.width > 0) // Filter obstacles off-screen to the left
+        .map(obs => ({ ...obs, worldX: obs.worldX - obstacleSpeed }))
+        .filter(obs => (obs.worldX - worldScrollX) + obs.width > 0)
     );
 
-    // Collision Detection
-    // Player's screen rectangle is fixed at PLAYER_TARGET_SCREEN_X
-    const playerRect = { x: PLAYER_TARGET_SCREEN_X, y: newPlayerY, width: PLAYER_WIDTH, height: PLAYER_HEIGHT };
+    // Pizza Management
+    if (timestamp - lastPizzaSpawnTimeRef.current > pizzaSpawnInterval) {
+      spawnPizza();
+      lastPizzaSpawnTimeRef.current = timestamp;
+    }
+    setPizzas(prevPizzas =>
+      prevPizzas
+        .map(p => ({ ...p, worldX: p.worldX - obstacleSpeed })) // Pizzas move with obstacles
+        .filter(p => { 
+          const pizzaScreenX = p.worldX - worldScrollX;
+          const playerRect = { x: PLAYER_TARGET_SCREEN_X, y: newPlayerY, width: PLAYER_WIDTH, height: PLAYER_HEIGHT };
+          const pizzaRect = { x: pizzaScreenX, y: p.y, width: p.width, height: p.height };
+
+          if (
+            playerRect.x < pizzaRect.x + pizzaRect.width &&
+            playerRect.x + playerRect.width > pizzaRect.x &&
+            playerRect.y < pizzaRect.y + pizzaRect.height &&
+            playerRect.y + playerRect.height > pizzaRect.y
+          ) {
+            setPizzasCollected(pc => pc + 1);
+            return false; // Remove collected pizza
+          }
+          return (pizzaScreenX + p.width) > 0; 
+        })
+    );
+
+    // Collision Detection (Player vs Obstacles)
+    const playerRectForObstacle = { x: PLAYER_TARGET_SCREEN_X, y: newPlayerY, width: PLAYER_WIDTH, height: PLAYER_HEIGHT };
     for (const obs of obstacles) {
-      const obsScreenX = obs.worldX - worldScrollX; // Calculate obstacle's screen X
+      const obsScreenX = obs.worldX - worldScrollX;
       const obsRect = { x: obsScreenX, y: obs.y, width: obs.width, height: obs.height };
       if (
-        playerRect.x < obsRect.x + obsRect.width &&
-        playerRect.x + playerRect.width > obsRect.x &&
-        playerRect.y < obsRect.y + obsRect.height &&
-        playerRect.y + playerRect.height > obsRect.y
+        playerRectForObstacle.x < obsRect.x + obsRect.width &&
+        playerRectForObstacle.x + playerRectForObstacle.width > obsRect.x &&
+        playerRectForObstacle.y < obsRect.y + obsRect.height &&
+        playerRectForObstacle.y + playerRectForObstacle.height > obsRect.y
       ) {
         setGameOver(true);
         setGameRunning(false);
@@ -248,19 +307,23 @@ const Game: React.FC = () => {
       }
     }
     
-    const expectedLevelBasedOnScore = Math.floor(score / LEVEL_UP_SCORE_INTERVAL) + 1;
-    if (score > 0 && score % LEVEL_UP_SCORE_INTERVAL === 0 && level < expectedLevelBasedOnScore ) {
-        setLevel(l => l + 1);
-        setObstacleSpeed(s => s + 0.2);
-        setObstacleSpawnInterval(i => Math.max(500, i - 100));
+    // Difficulty scaling based on miles covered
+    const currentMileMilestone = Math.floor(milesCovered / DIFFICULTY_UPDATE_MILESTONE);
+    if (milesCovered > 0 && currentMileMilestone > lastDifficultyUpdateMileRef.current) {
+        setObstacleSpeed(s => s + 0.1); 
+        setObstacleSpawnInterval(i => Math.max(600, i - 60)); 
+        setPizzaSpawnInterval(i => Math.max(1200, i - 40)); 
+        lastDifficultyUpdateMileRef.current = currentMileMilestone;
     }
 
     gameLoopRef.current = requestAnimationFrame(gameLoop);
   }, [
       gameRunning, gameOver, playerWorldX, playerPositionY, playerVelocityY, isJumping, 
-      obstacles, spawnObstacle, obstacleSpeed, obstacleSpawnInterval, score, level, worldScrollX
+      obstacles, spawnObstacle, pizzas, spawnPizza, 
+      obstacleSpeed, obstacleSpawnInterval, pizzaSpawnInterval, 
+      milesCovered, // pizzasCollected is not a dependency for gameLoop, it's a result
+      worldScrollX, spawnPizza, spawnObstacle // Ensure spawn functions are stable or listed
   ]);
-
 
   useEffect(() => {
     if (gameRunning && !gameOver) {
@@ -273,32 +336,31 @@ const Game: React.FC = () => {
     };
   }, [gameRunning, gameOver, gameLoop]);
 
-  // Style for the game area to enable background scrolling
   const gameAreaStyle: React.CSSProperties = {
     width: `${GAME_WIDTH}px`,
     height: `${GAME_HEIGHT}px`,
     backgroundImage: 'url(/pixelbg.jpg)',
-    backgroundRepeat: 'repeat-x', // Tile the background image horizontally
-    backgroundPositionY: 'center', // Keep vertical position centered (or '0' if top aligned)
-    backgroundPositionX: `-${worldScrollX % GAME_WIDTH}px`, // Scroll horizontally, loop the background image
-    backgroundSize: `auto ${GAME_HEIGHT}px`, // Scale image height to game height, auto width for tiling
-    borderWidth: '2px', // From pixel-box class
+    backgroundRepeat: 'repeat-x',
+    backgroundPositionY: 'center',
+    backgroundPositionX: `-${worldScrollX % GAME_WIDTH}px`,
+    backgroundSize: `auto ${GAME_HEIGHT}px`,
+    borderWidth: '2px',
   };
 
   return (
     <div className="flex flex-col items-center p-2 md:p-4 rounded-md pixel-box bg-[hsl(var(--game-area-background))]">
       <div className="flex justify-between w-full mb-2 text-sm md:text-base px-1">
-        <p className="pixel-text">Score: {score}</p>
-        <p className="pixel-text">Level: {level}</p>
+        <p className="pixel-text">Pizzas: {pizzasCollected}</p>
+        <p className="pixel-text">Miles: {milesCovered}</p>
       </div>
       <div
         ref={gameAreaRef}
-        className="relative overflow-hidden pixel-box" // pixel-box for border
+        className="relative overflow-hidden pixel-box"
         style={gameAreaStyle}
         tabIndex={0}
       >
         <PlayerComponent
-          x={PLAYER_TARGET_SCREEN_X} // Player's X is now fixed on screen
+          x={PLAYER_TARGET_SCREEN_X}
           y={playerPositionY}
           width={PLAYER_WIDTH}
           height={PLAYER_HEIGHT}
@@ -307,7 +369,6 @@ const Game: React.FC = () => {
         />
         {obstacles.map(obs => {
           const screenX = obs.worldX - worldScrollX;
-          // Optimization: Only render obstacles that are potentially visible on screen
           if (screenX + obs.width > 0 && screenX < GAME_WIDTH) {
             return (
               <ObstacleComponent
@@ -322,11 +383,26 @@ const Game: React.FC = () => {
           }
           return null;
         })}
+        {pizzas.map(pizza => {
+          const screenX = pizza.worldX - worldScrollX;
+          if (screenX + pizza.width > 0 && screenX < GAME_WIDTH) {
+            return (
+              <PizzaComponent
+                key={pizza.id}
+                x={screenX}
+                y={pizza.y}
+                width={pizza.width}
+                height={pizza.height}
+              />
+            );
+          }
+          return null;
+        })}
         {gameOver && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 p-4">
             <h2 className="text-3xl md:text-4xl text-destructive mb-4 pixel-text">Game Over</h2>
-            <p className="text-lg md:text-xl mb-2 pixel-text">Final Score: {score}</p>
-            <p className="text-lg md:text-xl mb-6 pixel-text">Level: {level}</p>
+            <p className="text-lg md:text-xl mb-2 pixel-text">Pizzas Collected: {pizzasCollected}</p>
+            <p className="text-lg md:text-xl mb-6 pixel-text">Miles Covered: {milesCovered}</p>
             <Button onClick={resetGame} variant="primary" className="pixel-text text-sm md:text-base">
               Restart (Space)
             </Button>
@@ -341,5 +417,3 @@ const Game: React.FC = () => {
 };
 
 export default Game;
-
-    
