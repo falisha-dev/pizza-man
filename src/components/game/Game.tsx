@@ -9,14 +9,14 @@ import PizzaComponent from './Pizza';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-const GAME_WIDTH = 600;
-const GAME_HEIGHT = 350;
+const GAME_WIDTH = 700; // Increased from 600
+const GAME_HEIGHT = 400; // Increased from 350
 const PLAYER_WIDTH = 48;
 const PLAYER_HEIGHT = 48;
 const GRAVITY = 0.7;
 const JUMP_STRENGTH = -13;
 const JUMP_BOOST_STRENGTH = -7;
-const STOMP_BOUNCE_STRENGTH = -10; // Added for player bouncing off minions
+const STOMP_BOUNCE_STRENGTH = -10;
 const PLAYER_HORIZONTAL_SPEED = 5;
 const GROUND_Y = GAME_HEIGHT - PLAYER_HEIGHT;
 
@@ -32,9 +32,6 @@ const initialObstacleSpeed = 2.5;
 const initialObstacleSpawnInterval = 2200; // ms
 const INITIAL_PIZZA_SPAWN_INTERVAL = 2800; // ms
 const DIFFICULTY_UPDATE_MILESTONE = 75; // Increase difficulty every 75 miles
-
-// This offset accounts for the 2px border on each side + 2px shadow offset for pixel-box
-const BORDER_AND_SHADOW_OFFSET = 6; 
 
 interface ObstacleState {
   id: string;
@@ -97,19 +94,25 @@ const Game: React.FC = () => {
   useLayoutEffect(() => {
     const calculateScale = () => {
       if (scalerWrapperRef.current && gameAreaRef.current) {
-        const availableWidth = scalerWrapperRef.current.offsetWidth;
-        const availableHeight = scalerWrapperRef.current.offsetHeight;
+        let availableWidth = scalerWrapperRef.current.offsetWidth;
+        let availableHeight = scalerWrapperRef.current.offsetHeight;
 
-        // Consider the game's visual footprint including border/shadow for scaling
-        const gameVisualWidth = GAME_WIDTH + (isMobile ? 0 : BORDER_AND_SHADOW_OFFSET);
-        const gameVisualHeight = GAME_HEIGHT + (isMobile ? 0 : BORDER_AND_SHADOW_OFFSET);
+        const gameVisualWidth = GAME_WIDTH;
+        const gameVisualHeight = GAME_HEIGHT;
+        
+        // For mobile, subtract a small amount to ensure fit due to borders/shadows from parent
+        // if (isMobile) {
+        //   availableWidth -= 4; // Small buffer
+        //   availableHeight -= 4;
+        // }
+
 
         let scaleX = availableWidth / gameVisualWidth;
         let scaleY = availableHeight / gameVisualHeight;
         
         let newScale = Math.min(scaleX, scaleY);
 
-        const minScale = 0.3; 
+        const minScale = isMobile ? 0.3 : 0.5; // Adjusted minScale for mobile
         const maxScale = isMobile ? 1.0 : 1.75;
         
         newScale = Math.max(minScale, Math.min(newScale, maxScale));
@@ -199,14 +202,14 @@ const Game: React.FC = () => {
     if (isMovingHorizontally && !gameOver && gameRunning) {
       const timer = setInterval(() => {
         setPlayerAnimationFrame(prevFrame => {
-          if (prevFrame === 0 && !isMovingHorizontally) return 0; // from standing to moving
-          if (prevFrame === 0 || prevFrame === 2 ) return 1; // if standing or frame 2, go to 1
-          return 2; // if frame 1, go to 2
+          if (prevFrame === 0 && !isMovingHorizontally) return 0; 
+          if (prevFrame === 0 || prevFrame === 2 ) return 1; 
+          return 2; 
         });
       }, PLAYER_ANIMATION_INTERVAL);
       return () => clearInterval(timer);
     } else if (!isMovingHorizontally && !isJumping) {
-       setPlayerAnimationFrame(0); // Standing frame if not moving and not jumping
+       setPlayerAnimationFrame(0); 
     }
   }, [isMovingHorizontally, isJumping, gameOver, gameRunning]);
 
@@ -214,25 +217,25 @@ const Game: React.FC = () => {
     const width = OBSTACLE_MIN_WIDTH + Math.random() * (OBSTACLE_MAX_WIDTH - OBSTACLE_MIN_WIDTH);
     const height = OBSTACLE_MIN_HEIGHT + Math.random() * (OBSTACLE_MAX_HEIGHT - OBSTACLE_MIN_HEIGHT);
     const type = Math.random() > 0.3 ? 'ground' : 'floating';
-    const floatingObstacleBaseY = GAME_HEIGHT - height - PLAYER_HEIGHT; // Base for floating obstacles to not be too high
+    const floatingObstacleBaseY = GAME_HEIGHT - height - PLAYER_HEIGHT; 
     const yPosition = type === 'ground' 
       ? GAME_HEIGHT - height 
-      : floatingObstacleBaseY - Math.random() * PLAYER_HEIGHT * 1.2; // Random height for floating
+      : floatingObstacleBaseY - Math.random() * PLAYER_HEIGHT * 1.2; 
     
-    const spawnWorldX = worldScrollX + GAME_WIDTH + Math.random() * (100 / scale) + (50 /scale) ;
+    const spawnWorldX = worldScrollX + GAME_WIDTH; // Spawn at the right edge
 
     setObstacles(prev => [
       ...prev,
       {
         id: `obs-${Date.now()}-${Math.random()}`,
         worldX: spawnWorldX,
-        y: Math.max(0, yPosition), // Ensure y is not negative
+        y: Math.max(0, yPosition), 
         width,
         height,
         color: obstacleColors[Math.floor(Math.random() * obstacleColors.length)],
       },
     ]);
-  }, [worldScrollX, scale]);
+  }, [worldScrollX, scale]); // scale might be used if spawn interval randomness depends on it
 
   const spawnPizza = useCallback(() => {
     const width = PIZZA_WIDTH;
@@ -241,7 +244,7 @@ const Game: React.FC = () => {
     const maxY = GROUND_Y - height - PLAYER_HEIGHT * 0.5; 
     const yPosition = Math.random() * (maxY - minY) + minY;
     
-    const spawnWorldX = worldScrollX + GAME_WIDTH + Math.random() * (200 / scale) + (50 / scale);
+    const spawnWorldX = worldScrollX + GAME_WIDTH; // Spawn at the right edge
 
     setPizzas(prev => [
       ...prev,
@@ -253,7 +256,7 @@ const Game: React.FC = () => {
         height,
       },
     ]);
-  }, [worldScrollX, scale]); 
+  }, [worldScrollX, scale]); // scale might be used if spawn interval randomness depends on it
   
   useEffect(() => { 
     if (!gameRunning || gameOver) {
@@ -296,15 +299,15 @@ const Game: React.FC = () => {
     if (newY >= GROUND_Y) {
       newY = GROUND_Y;
       newVy = 0;
-      if (isJumping) { // only reset jumping state if it was true
+      if (isJumping) { 
         setIsJumping(false);
         setCanBoostJump(false); 
-        if (!isMovingHorizontally) setPlayerAnimationFrame(0); // If landed and not moving, set to standing
+        if (!isMovingHorizontally) setPlayerAnimationFrame(0); 
       }
-    } else if (newVy > 0 && isJumping) { // Player is falling
-        setPlayerAnimationFrame(2); // Falling animation frame
-    } else if (newVy < 0 && isJumping) { // Player is rising
-        setPlayerAnimationFrame(1); // Jumping up animation frame
+    } else if (newVy > 0 && isJumping) { 
+        setPlayerAnimationFrame(2); 
+    } else if (newVy < 0 && isJumping) { 
+        setPlayerAnimationFrame(1); 
     }
     
     setPlayerPositionY(newY);
@@ -317,7 +320,7 @@ const Game: React.FC = () => {
     setObstacles(prevObstacles =>
       prevObstacles
         .map(obs => ({ ...obs, worldX: obs.worldX - obstacleSpeed }))
-        .filter(obs => (obs.worldX - worldScrollX) + obs.width > (-50 / scale) ) // Keep if visible or slightly off-screen left
+        .filter(obs => (obs.worldX - worldScrollX) + obs.width > 0) // Keep if right edge is past screen left
     );
 
     if (timestamp - lastPizzaSpawnTimeRef.current > pizzaSpawnInterval) {
@@ -341,7 +344,7 @@ const Game: React.FC = () => {
             setPizzasCollected(pc => pc + 1);
             return false; 
           }
-          return (pizzaScreenX + p.width) > (-50 / scale); 
+          return (pizzaScreenX + p.width) > 0; // Keep if right edge is past screen left
         })
     );
 
@@ -359,27 +362,20 @@ const Game: React.FC = () => {
         playerRectForObstacle.y + playerRectForObstacle.height > obsRect.y
       ) {
         const playerIsFalling = playerVelocityY > 0;
-        // Approximate player's feet Y position in the previous frame's state
-        // (Current Y - Current Velocity) + Player Height gives an idea of where feet were before this frame's Y update
         const playerFeetPreviousFrameY = (playerPositionY - playerVelocityY) + PLAYER_HEIGHT; 
-        
-        // Stomp condition: Player is falling, and their feet were roughly above or at the obstacle's top,
-        // and are now intersecting the top portion of the obstacle.
-        // A small tolerance (e.g., 20% of obstacle height) makes stomping feel more forgiving.
         const stompVerticalTolerance = obs.height * 0.2; 
 
         if (
           playerIsFalling &&
-          playerFeetPreviousFrameY <= obs.y + stompVerticalTolerance && // Feet were above or slightly into the top
-          (playerRectForObstacle.y + playerRectForObstacle.height) >= obs.y // Current feet are at or below obstacle top
+          playerFeetPreviousFrameY <= obs.y + stompVerticalTolerance && 
+          (playerRectForObstacle.y + playerRectForObstacle.height) >= obs.y &&
+          (playerRectForObstacle.y + playerRectForObstacle.height) <= obs.y + obs.height * 0.5 // Ensure player feet land on top half
         ) {
-          // Stomp!
           obstaclesToRemove.add(obs.id);
-          setPlayerVelocityY(STOMP_BOUNCE_STRENGTH); // Bounce
-          setIsJumping(true); // Allow jump boost after stomp
+          setPlayerVelocityY(STOMP_BOUNCE_STRENGTH); 
+          setIsJumping(true); 
           setCanBoostJump(true);
         } else {
-          // Not a stomp, so it's a game over collision
           setGameOver(true);
           setGameRunning(false);
           break; 
@@ -391,7 +387,7 @@ const Game: React.FC = () => {
       setObstacles(prevObs => prevObs.filter(o => !obstaclesToRemove.has(o.id)));
     }
     
-    if (gameOver) { // Check again in case set by collision
+    if (gameOver) { 
         gameLoopRef.current = requestAnimationFrame(gameLoop);
         return;
     }
@@ -408,7 +404,7 @@ const Game: React.FC = () => {
   }, [
       gameRunning, gameOver, playerWorldX, playerPositionY, playerVelocityY, isJumping, canBoostJump,
       obstacles, pizzas, obstacleSpeed, obstacleSpawnInterval, pizzaSpawnInterval, 
-      milesCovered, worldScrollX, spawnPizza, spawnObstacle, scale // Added scale
+      milesCovered, worldScrollX, spawnPizza, spawnObstacle, scale 
   ]);
 
   useEffect(() => {
@@ -422,19 +418,27 @@ const Game: React.FC = () => {
     };
   }, [gameRunning, gameOver, gameLoop]);
 
+  const scalerWrapperStyle: React.CSSProperties = {
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden', // Important for containing scaled content
+    backgroundImage: `url(/pixelbg.jpg)`,
+    backgroundRepeat: 'repeat-x',
+    backgroundPositionY: 'center',
+    backgroundPositionX: `-${(worldScrollX * scale) % (GAME_WIDTH * scale * 2)}px`, // Scroll the larger background
+    backgroundSize: `auto ${GAME_HEIGHT * scale}px`,
+  };
+  
   const gameAreaDynamicStyle: React.CSSProperties = {
     width: `${GAME_WIDTH}px`,
     height: `${GAME_HEIGHT}px`,
-    backgroundImage: 'url(/pixelbg.jpg)',
-    backgroundRepeat: 'repeat-x',
-    backgroundPositionY: 'center',
-    backgroundPositionX: `-${(worldScrollX * scale) % (GAME_WIDTH * scale)}px`, // Adjust scroll by scale
-    backgroundSize: `auto ${GAME_HEIGHT * scale}px`, // Adjust size by scale
+    // Background is now on scalerWrapperRef
     transform: `scale(${scale})`,
-    transformOrigin: 'center center', // Changed from top left
-    // position: 'absolute', // Removed absolute, let flexbox center it
-    // top: 0, // Removed
-    // left: 0, // Removed
+    transformOrigin: 'center center', 
+    position: 'relative', // Keep for absolute positioning of children
   };
 
   const gameWrapperClasses = isMobile 
@@ -450,13 +454,13 @@ const Game: React.FC = () => {
       </div>
       <div 
         ref={scalerWrapperRef} 
-        className="flex-grow w-full flex items-center justify-center overflow-hidden relative"
+        className={isMobile ? "" : "pixel-box rounded-md"} // pixel-box on scaler for desktop
+        style={scalerWrapperStyle}
       >
         <div
           ref={gameAreaRef}
-          className={isMobile ? "" : "pixel-box"} // Conditional pixel-box for border
           style={gameAreaDynamicStyle}
-          tabIndex={0}
+          tabIndex={0} // Keep for focus/keyboard events if needed by game itself
         >
           <PlayerComponent
             x={PLAYER_TARGET_SCREEN_X}
@@ -468,8 +472,8 @@ const Game: React.FC = () => {
           />
           {obstacles.map(obs => {
             const screenX = obs.worldX - worldScrollX;
-             // Wider culling range, adjusted by scale
-            if (screenX + obs.width > (-50 / scale) && screenX < (GAME_WIDTH + (50 / scale))) {
+            // Render if partially within GAME_WIDTH
+            if (screenX < GAME_WIDTH && screenX + obs.width > 0) {
               return (
                 <ObstacleComponent
                   key={obs.id}
@@ -485,8 +489,8 @@ const Game: React.FC = () => {
           })}
           {pizzas.map(pizza => {
             const screenX = pizza.worldX - worldScrollX;
-             // Wider culling range, adjusted by scale
-            if (screenX + pizza.width > (-50 / scale) && screenX < (GAME_WIDTH + (50 / scale))) {
+            // Render if partially within GAME_WIDTH
+            if (screenX < GAME_WIDTH && screenX + pizza.width > 0) {
               return (
                 <PizzaComponent
                   key={pizza.id}
@@ -521,3 +525,4 @@ const Game: React.FC = () => {
 };
 
 export default Game;
+
