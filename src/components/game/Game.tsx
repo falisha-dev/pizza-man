@@ -81,7 +81,8 @@ const Game: React.FC = () => {
   const [scale, setScale] = useState(1);
   const scalerWrapperRef = useRef<HTMLDivElement>(null);
   const gameAreaRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const backgroundAudioRef = useRef<HTMLAudioElement>(null);
+  const gameOverAudioRef = useRef<HTMLAudioElement>(null);
 
   const keysPressed = useRef<{ [key: string]: boolean }>({});
   const gameLoopRef = useRef<number>();
@@ -162,9 +163,13 @@ const Game: React.FC = () => {
     setIsMovingHorizontally(false);
     if (milesIntervalRef.current) clearInterval(milesIntervalRef.current);
     lastDifficultyUpdateMileRef.current = 0;
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(error => console.warn("Audio play failed on reset:", error));
+    if (backgroundAudioRef.current) {
+      backgroundAudioRef.current.currentTime = 0;
+      backgroundAudioRef.current.play().catch(error => console.warn("Audio play failed on reset:", error));
+    }
+    if (gameOverAudioRef.current) {
+      gameOverAudioRef.current.pause();
+      gameOverAudioRef.current.currentTime = 0;
     }
   }, []);
 
@@ -173,14 +178,21 @@ const Game: React.FC = () => {
   }, [resetGame]);
 
   useEffect(() => {
-    if (audioRef.current) {
+    if (backgroundAudioRef.current) {
       if (gameRunning && !gameOver) {
-        audioRef.current.play().catch(error => console.warn("Audio play failed:", error));
+        backgroundAudioRef.current.play().catch(error => console.warn("Background audio play failed:", error));
       } else {
-        audioRef.current.pause();
+        backgroundAudioRef.current.pause();
       }
     }
   }, [gameRunning, gameOver]);
+
+  useEffect(() => {
+    if (gameOver && gameOverAudioRef.current) {
+      gameOverAudioRef.current.currentTime = 0;
+      gameOverAudioRef.current.play().catch(error => console.warn("Game over audio play failed:", error));
+    }
+  }, [gameOver]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     keysPressed.current[e.code] = true; 
@@ -466,7 +478,8 @@ const Game: React.FC = () => {
 
   return (
     <div className={gameWrapperClasses}>
-      <audio ref={audioRef} src="/backgroundmusic.mp3" loop preload="auto" />
+      <audio ref={backgroundAudioRef} src="/backgroundmusic.mp3" loop preload="auto" />
+      <audio ref={gameOverAudioRef} src="/restart.mp3" preload="auto" />
       <div className="flex justify-between w-full mb-1 sm:mb-2 text-xs sm:text-sm md:text-base px-1">
         <p className="pixel-text">Pizzas: {pizzasCollected}</p>
         <p className="pixel-text">Miles: {milesCovered}</p>
