@@ -9,8 +9,8 @@ import PizzaComponent from './Pizza';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-const GAME_WIDTH = 700; // Increased from 600
-const GAME_HEIGHT = 400; // Increased from 350
+const GAME_WIDTH = 700; 
+const GAME_HEIGHT = 400; 
 const PLAYER_WIDTH = 48;
 const PLAYER_HEIGHT = 48;
 const GRAVITY = 0.7;
@@ -81,6 +81,7 @@ const Game: React.FC = () => {
   const [scale, setScale] = useState(1);
   const scalerWrapperRef = useRef<HTMLDivElement>(null);
   const gameAreaRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const keysPressed = useRef<{ [key: string]: boolean }>({});
   const gameLoopRef = useRef<number>();
@@ -96,29 +97,33 @@ const Game: React.FC = () => {
       if (scalerWrapperRef.current && gameAreaRef.current) {
         let availableWidth = scalerWrapperRef.current.offsetWidth;
         let availableHeight = scalerWrapperRef.current.offsetHeight;
+        
+        if (isMobile) {
+          availableWidth -= 4; 
+          availableHeight -= 4;
+        }
 
         const gameVisualWidth = GAME_WIDTH;
         const gameVisualHeight = GAME_HEIGHT;
-        
-        // For mobile, subtract a small amount to ensure fit due to borders/shadows from parent
-        // if (isMobile) {
-        //   availableWidth -= 4; // Small buffer
-        //   availableHeight -= 4;
-        // }
-
 
         let scaleX = availableWidth / gameVisualWidth;
         let scaleY = availableHeight / gameVisualHeight;
         
         let newScale = Math.min(scaleX, scaleY);
 
-        const minScale = isMobile ? 0.3 : 0.5; // Adjusted minScale for mobile
-        const maxScale = isMobile ? 1.0 : 1.75;
+        const minScaleMobile = 0.3;
+        const maxScaleMobile = 1.0; 
+        const minScaleDesktop = 0.5;
+        const maxScaleDesktop = 1.75;
         
-        newScale = Math.max(minScale, Math.min(newScale, maxScale));
+        if (isMobile) {
+            newScale = Math.max(minScaleMobile, Math.min(newScale, maxScaleMobile));
+        } else {
+            newScale = Math.max(minScaleDesktop, Math.min(newScale, maxScaleDesktop));
+        }
         
         if (isNaN(newScale) || !isFinite(newScale)) {
-            newScale = isMobile ? minScale : 1;
+            newScale = isMobile ? minScaleMobile : 1;
         }
         setScale(newScale);
       }
@@ -157,11 +162,25 @@ const Game: React.FC = () => {
     setIsMovingHorizontally(false);
     if (milesIntervalRef.current) clearInterval(milesIntervalRef.current);
     lastDifficultyUpdateMileRef.current = 0;
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(error => console.warn("Audio play failed on reset:", error));
+    }
   }, []);
 
   useEffect(() => {
     resetGame();
   }, [resetGame]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      if (gameRunning && !gameOver) {
+        audioRef.current.play().catch(error => console.warn("Audio play failed:", error));
+      } else {
+        audioRef.current.pause();
+      }
+    }
+  }, [gameRunning, gameOver]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     keysPressed.current[e.code] = true; 
@@ -222,7 +241,7 @@ const Game: React.FC = () => {
       ? GAME_HEIGHT - height 
       : floatingObstacleBaseY - Math.random() * PLAYER_HEIGHT * 1.2; 
     
-    const spawnWorldX = worldScrollX + GAME_WIDTH; // Spawn at the right edge
+    const spawnWorldX = worldScrollX + GAME_WIDTH;
 
     setObstacles(prev => [
       ...prev,
@@ -235,7 +254,7 @@ const Game: React.FC = () => {
         color: obstacleColors[Math.floor(Math.random() * obstacleColors.length)],
       },
     ]);
-  }, [worldScrollX, scale]); // scale might be used if spawn interval randomness depends on it
+  }, [worldScrollX]);
 
   const spawnPizza = useCallback(() => {
     const width = PIZZA_WIDTH;
@@ -244,7 +263,7 @@ const Game: React.FC = () => {
     const maxY = GROUND_Y - height - PLAYER_HEIGHT * 0.5; 
     const yPosition = Math.random() * (maxY - minY) + minY;
     
-    const spawnWorldX = worldScrollX + GAME_WIDTH; // Spawn at the right edge
+    const spawnWorldX = worldScrollX + GAME_WIDTH; 
 
     setPizzas(prev => [
       ...prev,
@@ -256,7 +275,7 @@ const Game: React.FC = () => {
         height,
       },
     ]);
-  }, [worldScrollX, scale]); // scale might be used if spawn interval randomness depends on it
+  }, [worldScrollX]);
   
   useEffect(() => { 
     if (!gameRunning || gameOver) {
@@ -320,7 +339,7 @@ const Game: React.FC = () => {
     setObstacles(prevObstacles =>
       prevObstacles
         .map(obs => ({ ...obs, worldX: obs.worldX - obstacleSpeed }))
-        .filter(obs => (obs.worldX - worldScrollX) + obs.width > 0) // Keep if right edge is past screen left
+        .filter(obs => (obs.worldX - worldScrollX) + obs.width > 0) 
     );
 
     if (timestamp - lastPizzaSpawnTimeRef.current > pizzaSpawnInterval) {
@@ -344,7 +363,7 @@ const Game: React.FC = () => {
             setPizzasCollected(pc => pc + 1);
             return false; 
           }
-          return (pizzaScreenX + p.width) > 0; // Keep if right edge is past screen left
+          return (pizzaScreenX + p.width) > 0; 
         })
     );
 
@@ -369,7 +388,7 @@ const Game: React.FC = () => {
           playerIsFalling &&
           playerFeetPreviousFrameY <= obs.y + stompVerticalTolerance && 
           (playerRectForObstacle.y + playerRectForObstacle.height) >= obs.y &&
-          (playerRectForObstacle.y + playerRectForObstacle.height) <= obs.y + obs.height * 0.5 // Ensure player feet land on top half
+          (playerRectForObstacle.y + playerRectForObstacle.height) <= obs.y + obs.height * 0.5 
         ) {
           obstaclesToRemove.add(obs.id);
           setPlayerVelocityY(STOMP_BOUNCE_STRENGTH); 
@@ -403,8 +422,8 @@ const Game: React.FC = () => {
     gameLoopRef.current = requestAnimationFrame(gameLoop);
   }, [
       gameRunning, gameOver, playerWorldX, playerPositionY, playerVelocityY, isJumping, canBoostJump,
-      obstacles, pizzas, obstacleSpeed, obstacleSpawnInterval, pizzaSpawnInterval, 
-      milesCovered, worldScrollX, spawnPizza, spawnObstacle, scale 
+      obstacleSpeed, obstacleSpawnInterval, pizzaSpawnInterval, 
+      milesCovered, worldScrollX, spawnPizza, spawnObstacle, obstacles, pizzas
   ]);
 
   useEffect(() => {
@@ -424,43 +443,43 @@ const Game: React.FC = () => {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden', // Important for containing scaled content
+    overflow: 'hidden', 
     backgroundImage: `url(/pixelbg.jpg)`,
     backgroundRepeat: 'repeat-x',
     backgroundPositionY: 'center',
-    backgroundPositionX: `-${(worldScrollX * scale) % (GAME_WIDTH * scale * 2)}px`, // Scroll the larger background
+    backgroundPositionX: `-${(worldScrollX * scale)}px`, 
     backgroundSize: `auto ${GAME_HEIGHT * scale}px`,
   };
   
   const gameAreaDynamicStyle: React.CSSProperties = {
     width: `${GAME_WIDTH}px`,
     height: `${GAME_HEIGHT}px`,
-    // Background is now on scalerWrapperRef
     transform: `scale(${scale})`,
     transformOrigin: 'center center', 
-    position: 'relative', // Keep for absolute positioning of children
+    position: 'relative', 
   };
 
   const gameWrapperClasses = isMobile 
     ? "w-full h-full flex flex-col items-center justify-center overflow-hidden" 
-    : "w-full max-w-4xl mx-auto flex flex-col items-center p-2 rounded-md pixel-box h-full overflow-hidden";
+    : "w-full max-w-4xl mx-auto flex flex-col items-center h-full overflow-hidden";
 
 
   return (
     <div className={gameWrapperClasses}>
+      <audio ref={audioRef} src="/backgroundmusic.mp3" loop preload="auto" />
       <div className="flex justify-between w-full mb-1 sm:mb-2 text-xs sm:text-sm md:text-base px-1">
         <p className="pixel-text">Pizzas: {pizzasCollected}</p>
         <p className="pixel-text">Miles: {milesCovered}</p>
       </div>
       <div 
         ref={scalerWrapperRef} 
-        className={isMobile ? "" : "pixel-box rounded-md"} // pixel-box on scaler for desktop
+        className={isMobile ? "" : "pixel-box rounded-md"} 
         style={scalerWrapperStyle}
       >
         <div
           ref={gameAreaRef}
           style={gameAreaDynamicStyle}
-          tabIndex={0} // Keep for focus/keyboard events if needed by game itself
+          tabIndex={0} 
         >
           <PlayerComponent
             x={PLAYER_TARGET_SCREEN_X}
@@ -472,7 +491,6 @@ const Game: React.FC = () => {
           />
           {obstacles.map(obs => {
             const screenX = obs.worldX - worldScrollX;
-            // Render if partially within GAME_WIDTH
             if (screenX < GAME_WIDTH && screenX + obs.width > 0) {
               return (
                 <ObstacleComponent
@@ -489,7 +507,6 @@ const Game: React.FC = () => {
           })}
           {pizzas.map(pizza => {
             const screenX = pizza.worldX - worldScrollX;
-            // Render if partially within GAME_WIDTH
             if (screenX < GAME_WIDTH && screenX + pizza.width > 0) {
               return (
                 <PizzaComponent
@@ -525,4 +542,3 @@ const Game: React.FC = () => {
 };
 
 export default Game;
-
