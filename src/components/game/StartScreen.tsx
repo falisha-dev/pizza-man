@@ -32,6 +32,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStartGame }) => {
             onClick={onStartGame} 
             variant="primary" 
             className="pixel-text text-md sm:text-lg md:text-xl mt-4 md:mt-6 py-2 px-4 sm:py-3 sm:px-6"
+            aria-label="Start Game"
           >
             Start Run!
           </Button>
@@ -42,3 +43,4 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStartGame }) => {
 };
 
 export default StartScreen;
+
