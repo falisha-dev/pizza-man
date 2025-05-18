@@ -4,7 +4,7 @@
 
 import type React from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface StartScreenProps {
   onStartGame: () => void;
@@ -13,6 +13,14 @@ interface StartScreenProps {
 const StartScreen: React.FC<StartScreenProps> = ({ onStartGame }) => {
   return (
     <div className="flex flex-col items-center justify-center text-center p-4 md:p-8">
+      {/* Preloading assets */}
+      <div style={{ display: 'none' }} aria-hidden="true">
+        <img src="/background-lab.png" alt="Preload background lab" />
+        <img src="/pixelbg.jpg" alt="Preload pixel background" />
+        <audio src="/backgroundmusic.mp3" preload="auto"></audio>
+        <audio src="/restart.mp3" preload="auto"></audio>
+      </div>
+
       <Card className="w-full max-w-lg pixel-box bg-[hsl(var(--game-area-background))]">
         <CardHeader>
           <CardTitle className="text-2xl sm:text-3xl md:text-4xl pixel-text text-primary">Bitcoin Pizza Day!</CardTitle>
