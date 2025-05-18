@@ -8,6 +8,7 @@ import ObstacleComponent from './Obstacle';
 import PizzaComponent from './Pizza';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils'; // Added missing import
 
 const GAME_WIDTH = 700;
 const GAME_HEIGHT = 400;
@@ -384,6 +385,7 @@ const Game: React.FC = () => {
         const obsScreenX = updatedObs.worldX - worldScrollXRef.current;
 
         if (obsScreenX + updatedObs.width <= 0) continue; // Cull if off-screen left
+        if (obsScreenX > GAME_WIDTH) continue; // Cull if off-screen right
 
         let removeThisObstacle = false;
         const obsRect = { x: obsScreenX, y: updatedObs.y, width: updatedObs.width, height: updatedObs.height };
@@ -409,12 +411,14 @@ const Game: React.FC = () => {
             } else {
                 setGameOver(true);
                 setGameRunning(false);
-                // No need to continue processing obstacles if game over
-                newObstacles = obstaclesRef.current.map(o => ({ ...o, worldX: o.worldX - obstacleSpeedRef.current })).filter(o => (o.worldX - worldScrollXRef.current) + o.width > 0);
+                newObstacles = obstaclesRef.current.map(o => ({ ...o, worldX: o.worldX - obstacleSpeedRef.current })).filter(o => {
+                    const screenX = o.worldX - worldScrollXRef.current;
+                    return screenX + o.width > 0 && screenX < GAME_WIDTH;
+                });
                 break; 
             }
         }
-        if (!removeThisObstacle && !gameOver) { // Add !gameOver condition
+        if (!removeThisObstacle && !gameOver) { 
             newObstacles.push(updatedObs);
         }
     }
@@ -428,13 +432,14 @@ const Game: React.FC = () => {
 
 
     // Update and Process Pizzas
-    if (!gameOver) { // Only process pizzas if game is not over
+    if (!gameOver) { 
         let newPizzasCollectedCount = pizzasCollectedRef.current;
         const remainingPizzas = pizzasRef.current
             .map(p => ({ ...p, worldX: p.worldX - obstacleSpeedRef.current }))
             .filter(p => {
                 const pizzaScreenX = p.worldX - worldScrollXRef.current;
-                if (pizzaScreenX + p.width <= 0) return false; // Cull if off-screen left
+                if (pizzaScreenX + p.width <= 0) return false; 
+                if (pizzaScreenX > GAME_WIDTH) return false;
 
                 const pizzaRect = { x: pizzaScreenX, y: p.y, width: p.width, height: p.height };
                 if (
@@ -468,10 +473,10 @@ const Game: React.FC = () => {
       lastDifficultyUpdateMileRef.current = currentMileMilestone;
     }
 
-    if (gameRunning && !gameOver) { // Ensure loop continues only if game is active
+    if (gameRunning && !gameOver) { 
         gameLoopRef.current = requestAnimationFrame(gameLoop);
     }
-  }, [gameRunning, gameOver]); // Minimal dependencies
+  }, [gameRunning, gameOver]); 
 
   useEffect(() => {
     if (gameRunning && !gameOver) {
@@ -482,7 +487,7 @@ const Game: React.FC = () => {
     return () => {
       if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
     };
-  }, [gameRunning, gameOver, gameLoop]); // gameLoop is now stable
+  }, [gameRunning, gameOver, gameLoop]); 
 
   const scalerWrapperStyle: React.CSSProperties = {
     width: '100%',
@@ -522,7 +527,7 @@ const Game: React.FC = () => {
       <div
         ref={scalerWrapperRef}
         className={cn(
-          "flex-grow", // Added to take available vertical space
+          "flex-grow", 
           isMobile ? "" : "pixel-box rounded-md"
         )}
         style={scalerWrapperStyle}
@@ -542,30 +547,34 @@ const Game: React.FC = () => {
           />
           {uiObstacles.map(obs => {
             const screenX = obs.worldX - worldScrollXRef.current;
-             // Render condition already handled by filtering in gameLoop
-            return (
-              <ObstacleComponent
-                key={obs.id}
-                x={screenX}
-                y={obs.y}
-                width={obs.width}
-                height={obs.height}
-                color={obs.color}
-              />
-            );
+             if (screenX < GAME_WIDTH && screenX + obs.width > 0) {
+                return (
+                <ObstacleComponent
+                    key={obs.id}
+                    x={screenX}
+                    y={obs.y}
+                    width={obs.width}
+                    height={obs.height}
+                    color={obs.color}
+                />
+                );
+            }
+            return null;
           })}
           {uiPizzas.map(pizza => {
             const screenX = pizza.worldX - worldScrollXRef.current;
-            // Render condition already handled by filtering in gameLoop
-            return (
-              <PizzaComponent
-                key={pizza.id}
-                x={screenX}
-                y={pizza.y}
-                width={pizza.width}
-                height={pizza.height}
-              />
-            );
+            if (screenX < GAME_WIDTH && screenX + pizza.width > 0) {
+                return (
+                <PizzaComponent
+                    key={pizza.id}
+                    x={screenX}
+                    y={pizza.y}
+                    width={pizza.width}
+                    height={pizza.height}
+                />
+                );
+            }
+            return null;
           })}
           {gameOver && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 p-4">
@@ -589,4 +598,3 @@ const Game: React.FC = () => {
 };
 
 export default Game;
-
