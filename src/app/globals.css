@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
 @tailwind base;
@@ -112,12 +113,4 @@
 
 .pixel-text {
    font-family: 'Press Start 2P', system-ui, sans-serif;
-}
-
-/* Mobile landscape prompt styles */
-@media screen and (max-width: 767px) and (orientation: portrait) {
-  main > .game-content-wrapper {
-    display: none !important;
-  }
-  /* body::after is one way, but a dedicated div rendered by React is better for complex content. The prompt component handles this. */
 }

@@ -7,8 +7,7 @@ import PlayerComponent from './Player';
 import ObstacleComponent from './Obstacle';
 import PizzaComponent from './Pizza';
 import { Button } from '@/components/ui/button';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { cn } from '@/lib/utils'; // Added missing import
+import { cn } from '@/lib/utils';
 
 const GAME_WIDTH = 700;
 const GAME_HEIGHT = 400;
@@ -98,8 +97,6 @@ const createPizza = (currentWorldScrollX: number): PizzaState => {
 
 
 const Game: React.FC = () => {
-  const isMobile = useIsMobile();
-
   // UI State - directly used for rendering
   const [uiPlayerPositionY, setUiPlayerPositionY] = useState(GROUND_Y);
   const [uiPizzasCollected, setUiPizzasCollected] = useState(0);
@@ -144,13 +141,8 @@ const Game: React.FC = () => {
   useLayoutEffect(() => {
     const calculateScale = () => {
       if (scalerWrapperRef.current && gameAreaRef.current) {
-        let availableWidth = scalerWrapperRef.current.offsetWidth;
-        let availableHeight = scalerWrapperRef.current.offsetHeight;
-
-        if (isMobile) {
-          availableWidth -= 4;
-          availableHeight -= 4;
-        }
+        const availableWidth = scalerWrapperRef.current.offsetWidth;
+        const availableHeight = scalerWrapperRef.current.offsetHeight;
 
         const gameVisualWidth = GAME_WIDTH;
         const gameVisualHeight = GAME_HEIGHT;
@@ -160,19 +152,13 @@ const Game: React.FC = () => {
 
         let newScale = Math.min(scaleX, scaleY);
 
-        const minScaleMobile = 0.3;
-        const maxScaleMobile = 1.0;
         const minScaleDesktop = 0.5;
         const maxScaleDesktop = 1.75;
 
-        if (isMobile) {
-          newScale = Math.max(minScaleMobile, Math.min(newScale, maxScaleMobile));
-        } else {
-          newScale = Math.max(minScaleDesktop, Math.min(newScale, maxScaleDesktop));
-        }
-
+        newScale = Math.max(minScaleDesktop, Math.min(newScale, maxScaleDesktop));
+        
         if (isNaN(newScale) || !isFinite(newScale)) {
-          newScale = isMobile ? minScaleMobile : 1;
+          newScale = 1; // Default scale if calculation fails
         }
         setScale(newScale);
       }
@@ -180,13 +166,13 @@ const Game: React.FC = () => {
 
     calculateScale();
     window.addEventListener('resize', calculateScale);
-    window.addEventListener('orientationchange', calculateScale);
+    window.addEventListener('orientationchange', calculateScale); // Keep for desktop if browser supports it
 
     return () => {
       window.removeEventListener('resize', calculateScale);
       window.removeEventListener('orientationchange', calculateScale);
     };
-  }, [isMobile]);
+  }, []);
 
 
   const resetGame = useCallback(() => {
@@ -213,7 +199,7 @@ const Game: React.FC = () => {
     setUiPizzas([]);
     
     setGameOver(false);
-    setGameRunning(true); // This will trigger the game loop via useEffect
+    setGameRunning(true);
 
     lastObstacleSpawnTimeRef.current = 0;
     lastPizzaSpawnTimeRef.current = 0;
@@ -231,11 +217,11 @@ const Game: React.FC = () => {
       gameOverAudioRef.current.pause();
       gameOverAudioRef.current.currentTime = 0;
     }
-  }, []); // Empty dependency array as it only uses refs and setters
+  }, []);
 
   useEffect(() => {
-    resetGame(); // Initial game setup
-  }, [resetGame]); // resetGame is stable
+    resetGame();
+  }, [resetGame]);
 
   useEffect(() => {
     if (backgroundAudioRef.current) {
@@ -264,7 +250,7 @@ const Game: React.FC = () => {
     }
 
     if ((e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW')) {
-        if (!gameRunning || gameOver) return; // only jump if game is active
+        if (!gameRunning || gameOver) return;
 
         if (!isJumpingRef.current) {
             playerVelocityYRef.current = JUMP_STRENGTH;
@@ -275,7 +261,7 @@ const Game: React.FC = () => {
             canBoostJumpRef.current = false;
         }
     }
-  }, [gameOver, gameRunning, resetGame]); // gameRunning needed to control jump initiation
+  }, [gameOver, gameRunning, resetGame]);
 
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
     keysPressed.current[e.code] = false;
@@ -304,7 +290,7 @@ const Game: React.FC = () => {
       setPlayerAnimationFrame(0);
     }
     return () => clearInterval(animationTimer);
-  }, [isMovingHorizontally, gameOver, gameRunning]); // isJumpingRef.current cannot be direct dep here. Handled by playerAnimationFrame(0) logic.
+  }, [isMovingHorizontally, gameOver, gameRunning]);
 
   useEffect(() => {
     if (!gameRunning || gameOver) {
@@ -327,7 +313,6 @@ const Game: React.FC = () => {
       return;
     }
 
-    // Horizontal Movement
     let currentMovement = false;
     if (keysPressed.current['ArrowLeft'] || keysPressed.current['KeyA']) {
       playerWorldXRef.current -= PLAYER_HORIZONTAL_SPEED;
@@ -338,11 +323,10 @@ const Game: React.FC = () => {
       currentMovement = true;
     }
     playerWorldXRef.current = Math.max(PLAYER_TARGET_SCREEN_X, playerWorldXRef.current);
-    setIsMovingHorizontally(currentMovement); // Update UI state for animation
+    setIsMovingHorizontally(currentMovement);
 
     worldScrollXRef.current = playerWorldXRef.current - PLAYER_TARGET_SCREEN_X;
 
-    // Vertical Movement (Physics)
     playerVelocityYRef.current += GRAVITY;
     playerPositionYRef.current += playerVelocityYRef.current;
 
@@ -355,27 +339,24 @@ const Game: React.FC = () => {
         if (!currentMovement) setPlayerAnimationFrame(0);
       }
     } else if (playerVelocityYRef.current > 0 && isJumpingRef.current) {
-      setPlayerAnimationFrame(2); // Falling animation frame
+      setPlayerAnimationFrame(2); 
     } else if (playerVelocityYRef.current < 0 && isJumpingRef.current) {
-      setPlayerAnimationFrame(1); // Rising animation frame
+      setPlayerAnimationFrame(1);
     }
-    setUiPlayerPositionY(playerPositionYRef.current); // Update UI state
+    setUiPlayerPositionY(playerPositionYRef.current);
 
-    // Spawn Obstacles
     if (timestamp - lastObstacleSpawnTimeRef.current > obstacleSpawnIntervalRef.current) {
       const newObstacle = createObstacle(worldScrollXRef.current);
       obstaclesRef.current = [...obstaclesRef.current, newObstacle];
       lastObstacleSpawnTimeRef.current = timestamp;
     }
 
-    // Spawn Pizzas
     if (timestamp - lastPizzaSpawnTimeRef.current > pizzaSpawnIntervalRef.current) {
       const newPizza = createPizza(worldScrollXRef.current);
       pizzasRef.current = [...pizzasRef.current, newPizza];
       lastPizzaSpawnTimeRef.current = timestamp;
     }
     
-    // Update and Process Obstacles
     const playerRect = { x: PLAYER_TARGET_SCREEN_X, y: playerPositionYRef.current, width: PLAYER_WIDTH, height: PLAYER_HEIGHT };
     let newObstacles: ObstacleState[] = [];
     let minionStompedThisFrame = false;
@@ -384,8 +365,8 @@ const Game: React.FC = () => {
         const updatedObs = { ...obs, worldX: obs.worldX - obstacleSpeedRef.current };
         const obsScreenX = updatedObs.worldX - worldScrollXRef.current;
 
-        if (obsScreenX + updatedObs.width <= 0) continue; // Cull if off-screen left
-        if (obsScreenX > GAME_WIDTH) continue; // Cull if off-screen right
+        if (obsScreenX + updatedObs.width <= 0) continue;
+        if (obsScreenX > GAME_WIDTH) continue;
 
         let removeThisObstacle = false;
         const obsRect = { x: obsScreenX, y: updatedObs.y, width: updatedObs.width, height: updatedObs.height };
@@ -430,8 +411,6 @@ const Game: React.FC = () => {
     obstaclesRef.current = newObstacles;
     if (!gameOver) setUiObstacles([...newObstacles]);
 
-
-    // Update and Process Pizzas
     if (!gameOver) { 
         let newPizzasCollectedCount = pizzasCollectedRef.current;
         const remainingPizzas = pizzasRef.current
@@ -463,8 +442,6 @@ const Game: React.FC = () => {
         }
     }
 
-
-    // Difficulty Scaling
     const currentMileMilestone = Math.floor(milesCoveredRef.current / DIFFICULTY_UPDATE_MILESTONE);
     if (milesCoveredRef.current > 0 && currentMileMilestone > lastDifficultyUpdateMileRef.current) {
       obstacleSpeedRef.current += 0.1;
@@ -476,7 +453,7 @@ const Game: React.FC = () => {
     if (gameRunning && !gameOver) { 
         gameLoopRef.current = requestAnimationFrame(gameLoop);
     }
-  }, [gameRunning, gameOver]); 
+  }, [gameRunning, gameOver, obstaclesRef, pizzasRef]); // Added obstaclesRef and pizzasRef
 
   useEffect(() => {
     if (gameRunning && !gameOver) {
@@ -511,9 +488,7 @@ const Game: React.FC = () => {
     position: 'relative',
   };
 
-  const gameWrapperClasses = isMobile
-    ? "w-full h-full flex flex-col items-center justify-center overflow-hidden"
-    : "w-full max-w-4xl mx-auto flex flex-col items-center h-full overflow-hidden";
+  const gameWrapperClasses = "w-full max-w-4xl mx-auto flex flex-col items-center h-full overflow-hidden";
 
 
   return (
@@ -526,10 +501,7 @@ const Game: React.FC = () => {
       </div>
       <div
         ref={scalerWrapperRef}
-        className={cn(
-          "flex-grow", 
-          isMobile ? "" : "pixel-box rounded-md"
-        )}
+        className="flex-grow pixel-box rounded-md"
         style={scalerWrapperStyle}
       >
         <div
@@ -588,11 +560,9 @@ const Game: React.FC = () => {
           )}
         </div>
       </div>
-      {!isMobile && (
-        <div className="mt-2 sm:mt-4 text-xs text-center text-muted-foreground pixel-text">
-          Controls: Left/Right Arrows or A/D to Move, Space/Up Arrow or W to Jump
-        </div>
-      )}
+      <div className="mt-2 sm:mt-4 text-xs text-center text-muted-foreground pixel-text">
+        Controls: Left/Right Arrows or A/D to Move, Space/Up Arrow or W to Jump
+      </div>
     </div>
   );
 };
