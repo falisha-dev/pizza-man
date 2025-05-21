@@ -27,14 +27,12 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStartGame }) => {
         </CardHeader>
         <CardContent className="space-y-3 md:space-y-4">
           <p className="text-xs sm:text-sm md:text-base pixel-text text-foreground">
-            Story about the pizza day here
+          Bitcoin Pizza Day commemorates one of the most famous transactions in cryptocurrency history. On May 22, 2010, programmer Laszlo Hanyecz made the first known commercial purchase using Bitcoin when he bought two Papa John's pizzas for 10,000 BTC.
           </p>
           <p className="text-xs sm:text-sm md:text-base pixel-text text-foreground">
-            After a miscalculated experiment involving radioactive anchovies and a particle accelerator, you've accidentally created the galaxy's most delicious pizza.
-            Naturally, everyone wants a slice - especially the perpetually hungry security Minions!
           </p>
           <p className="text-xs sm:text-sm md:text-base pixel-text text-foreground">
-            Your mission: Grab as much pizza as you can, dodge the Minions, and cover the most miles to reach the emergency exit. Good luck, Runner!
+            Your mission: Grab as much pizza as you can, dodge the Minions, Crush the Minions by landing on them and cover the most miles to reach the emergency exit. Good luck, Runner!
           </p>
           <Button 
             onClick={onStartGame} 
