@@ -8,7 +8,7 @@ import ObstacleComponent from './Obstacle';
 import PizzaComponent from './Pizza';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { XCircle, PauseIcon, PlayIcon } from 'lucide-react'; // Added PauseIcon and PlayIcon
+import { PauseIcon, PlayIcon } from 'lucide-react'; // Removed XCircle
 
 const GAME_WIDTH = 700;
 const GAME_HEIGHT = 400;
@@ -97,10 +97,10 @@ const createPizza = (currentWorldScrollX: number): PizzaState => {
 };
 
 interface GameProps {
-  onExitGame: () => void;
+  // onExitGame prop removed
 }
 
-const Game: React.FC<GameProps> = ({ onExitGame }) => {
+const Game: React.FC<GameProps> = (/* { onExitGame } removed */) => {
   // UI State - directly used for rendering
   const [uiPlayerPositionY, setUiPlayerPositionY] = useState(GROUND_Y);
   const [uiPizzasCollected, setUiPizzasCollected] = useState(0);
@@ -511,25 +511,17 @@ const Game: React.FC<GameProps> = ({ onExitGame }) => {
 
   return (
     <div className={cn(gameWrapperClasses, "relative")}>
-      <Button
-        onClick={onExitGame}
-        variant="secondary"
-        size="icon"
-        className="absolute top-4 left-4 z-50 pixel-box rounded-none"
-        aria-label="Close Game"
-      >
-        <XCircle className="h-5 w-5" />
-      </Button>
+      {/* Close button removed */}
       <audio ref={backgroundAudioRef} src="/backgroundmusic.mp3" loop preload="auto" />
       <audio ref={gameOverAudioRef} src="/restart.mp3" preload="auto" />
-      <div className="flex justify-between w-full mb-1 sm:mb-2 text-xs sm:text-sm md:text-base px-1 pt-12">
+      <div className="flex justify-between w-full mb-1 sm:mb-2 text-xs sm:text-sm md:text-base px-1 pt-4"> {/* Adjusted pt */}
         <p className="pixel-text">Pizzas: {uiPizzasCollected}</p>
         <p className="pixel-text">Miles: {uiMilesCovered}</p>
       </div>
       <div
         ref={scalerWrapperRef}
         className={cn(
-            "flex-grow pixel-box rounded-md relative", // Added relative for pause button positioning
+            "flex-grow pixel-box rounded-md relative", 
         )}
         style={scalerWrapperStyle}
       >
@@ -606,4 +598,3 @@ const Game: React.FC<GameProps> = ({ onExitGame }) => {
 };
 
 export default Game;
-

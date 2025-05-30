@@ -37,7 +37,7 @@ export default function HomePage() {
       <div className="game-content-wrapper w-full max-w-5xl p-2 sm:p-4 md:p-6 flex flex-col items-center justify-center h-full">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 md:mb-6 pixel-text text-center">Pizza Man</h1>
         {gameStarted ? (
-          <Game />
+          <Game /> // Removed onExitGame prop
         ) : (
           <StartScreen onStartGame={handleStartGame} />
         )}
