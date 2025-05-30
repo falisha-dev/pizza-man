@@ -8,7 +8,7 @@ import ObstacleComponent from './Obstacle';
 import PizzaComponent from './Pizza';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { PauseIcon, PlayIcon } from 'lucide-react'; // Removed XCircle
+import { PauseIcon, PlayIcon } from 'lucide-react';
 
 const GAME_WIDTH = 700;
 const GAME_HEIGHT = 400;
@@ -247,14 +247,15 @@ const Game: React.FC<GameProps> = (/* { onExitGame } removed */) => {
     }
   }, [gameOver]);
 
-  const handlePauseToggle = () => {
+  const handlePauseToggle = useCallback(() => {
     if (gameOver) return;
     setIsPaused(prevPaused => !prevPaused);
-  };
+  },[gameOver]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.code === 'Escape') {
       handlePauseToggle();
+      e.preventDefault(); 
       return;
     }
     if (isPaused) return;
@@ -264,11 +265,16 @@ const Game: React.FC<GameProps> = (/* { onExitGame } removed */) => {
 
     if (e.code === 'Space' && gameOver) {
       resetGame();
+      e.preventDefault();
       return;
     }
 
     if ((e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW')) {
         if (!gameRunning || gameOver) return;
+
+        if (e.code === 'Space') {
+            e.preventDefault(); // Prevent space from clicking focused buttons when used for jump
+        }
 
         if (!isJumpingRef.current) {
             playerVelocityYRef.current = JUMP_STRENGTH;
@@ -279,7 +285,7 @@ const Game: React.FC<GameProps> = (/* { onExitGame } removed */) => {
             canBoostJumpRef.current = false;
         }
     }
-  }, [gameOver, gameRunning, resetGame, isPaused]);
+  }, [gameOver, gameRunning, resetGame, isPaused, handlePauseToggle]);
 
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
     keysPressed.current[e.code] = false;
@@ -471,7 +477,7 @@ const Game: React.FC<GameProps> = (/* { onExitGame } removed */) => {
     if (gameRunning && !gameOver) { 
         gameLoopRef.current = requestAnimationFrame(gameLoop);
     }
-  }, [gameRunning, gameOver, obstaclesRef, pizzasRef, isPaused]); // Added obstaclesRef, pizzasRef and isPaused
+  }, [gameRunning, gameOver, isPaused]); 
 
   useEffect(() => {
     if (gameRunning && !gameOver) {
@@ -496,6 +502,7 @@ const Game: React.FC<GameProps> = (/* { onExitGame } removed */) => {
     backgroundPositionY: 'center',
     backgroundPositionX: `-${(worldScrollXRef.current * scale)}px`,
     backgroundSize: `auto ${GAME_HEIGHT * scale}px`,
+    position: 'relative', // Added for pause button positioning
   };
 
   const gameAreaDynamicStyle: React.CSSProperties = {
@@ -511,17 +518,16 @@ const Game: React.FC<GameProps> = (/* { onExitGame } removed */) => {
 
   return (
     <div className={cn(gameWrapperClasses, "relative")}>
-      {/* Close button removed */}
       <audio ref={backgroundAudioRef} src="/backgroundmusic.mp3" loop preload="auto" />
       <audio ref={gameOverAudioRef} src="/restart.mp3" preload="auto" />
-      <div className="flex justify-between w-full mb-1 sm:mb-2 text-xs sm:text-sm md:text-base px-1 pt-4"> {/* Adjusted pt */}
+      <div className="flex justify-between w-full mb-1 sm:mb-2 text-xs sm:text-sm md:text-base px-1 pt-4">
         <p className="pixel-text">Pizzas: {uiPizzasCollected}</p>
         <p className="pixel-text">Miles: {uiMilesCovered}</p>
       </div>
       <div
         ref={scalerWrapperRef}
         className={cn(
-            "flex-grow pixel-box rounded-md relative", 
+            "flex-grow pixel-box rounded-md", 
         )}
         style={scalerWrapperStyle}
       >
@@ -598,3 +604,4 @@ const Game: React.FC<GameProps> = (/* { onExitGame } removed */) => {
 };
 
 export default Game;
+
