@@ -8,6 +8,7 @@ import ObstacleComponent from './Obstacle';
 import PizzaComponent from './Pizza';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { XCircle, PauseIcon, PlayIcon } from 'lucide-react'; // Added PauseIcon and PlayIcon
 
 const GAME_WIDTH = 700;
 const GAME_HEIGHT = 400;
@@ -95,8 +96,11 @@ const createPizza = (currentWorldScrollX: number): PizzaState => {
   };
 };
 
+interface GameProps {
+  onExitGame: () => void;
+}
 
-const Game: React.FC = () => {
+const Game: React.FC<GameProps> = ({ onExitGame }) => {
   // UI State - directly used for rendering
   const [uiPlayerPositionY, setUiPlayerPositionY] = useState(GROUND_Y);
   const [uiPizzasCollected, setUiPizzasCollected] = useState(0);
@@ -108,6 +112,8 @@ const Game: React.FC = () => {
   const [gameOver, setGameOver] = useState(false);
   const [gameRunning, setGameRunning] = useState(true);
   const [scale, setScale] = useState(1);
+  const [isPaused, setIsPaused] = useState(false);
+
 
   // Refs for game logic state - used inside gameLoop
   const playerWorldXRef = useRef(PLAYER_TARGET_SCREEN_X);
@@ -144,15 +150,15 @@ const Game: React.FC = () => {
         const availableWidth = scalerWrapperRef.current.offsetWidth;
         const availableHeight = scalerWrapperRef.current.offsetHeight;
 
-        const gameVisualWidth = GAME_WIDTH;
-        const gameVisualHeight = GAME_HEIGHT;
+        const gameVisualWidth = GAME_WIDTH; 
+        const gameVisualHeight = GAME_HEIGHT; 
 
         let scaleX = availableWidth / gameVisualWidth;
         let scaleY = availableHeight / gameVisualHeight;
-
+        
         let newScale = Math.min(scaleX, scaleY);
 
-        const minScaleDesktop = 0.5;
+        const minScaleDesktop = 0.5; 
         const maxScaleDesktop = 1.75;
 
         newScale = Math.max(minScaleDesktop, Math.min(newScale, maxScaleDesktop));
@@ -166,7 +172,7 @@ const Game: React.FC = () => {
 
     calculateScale();
     window.addEventListener('resize', calculateScale);
-    window.addEventListener('orientationchange', calculateScale); // Keep for desktop if browser supports it
+    window.addEventListener('orientationchange', calculateScale); 
 
     return () => {
       window.removeEventListener('resize', calculateScale);
@@ -200,6 +206,7 @@ const Game: React.FC = () => {
     
     setGameOver(false);
     setGameRunning(true);
+    setIsPaused(false);
 
     lastObstacleSpawnTimeRef.current = 0;
     lastPizzaSpawnTimeRef.current = 0;
@@ -225,13 +232,13 @@ const Game: React.FC = () => {
 
   useEffect(() => {
     if (backgroundAudioRef.current) {
-      if (gameRunning && !gameOver) {
+      if (gameRunning && !gameOver && !isPaused) {
         backgroundAudioRef.current.play().catch(error => console.warn("Background audio play failed:", error));
       } else {
         backgroundAudioRef.current.pause();
       }
     }
-  }, [gameRunning, gameOver]);
+  }, [gameRunning, gameOver, isPaused]);
 
   useEffect(() => {
     if (gameOver && gameOverAudioRef.current) {
@@ -240,7 +247,18 @@ const Game: React.FC = () => {
     }
   }, [gameOver]);
 
+  const handlePauseToggle = () => {
+    if (gameOver) return;
+    setIsPaused(prevPaused => !prevPaused);
+  };
+
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.code === 'Escape') {
+      handlePauseToggle();
+      return;
+    }
+    if (isPaused) return;
+
     keysPressed.current[e.code] = true;
     if (e.repeat) return;
 
@@ -261,7 +279,7 @@ const Game: React.FC = () => {
             canBoostJumpRef.current = false;
         }
     }
-  }, [gameOver, gameRunning, resetGame]);
+  }, [gameOver, gameRunning, resetGame, isPaused]);
 
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
     keysPressed.current[e.code] = false;
@@ -278,7 +296,7 @@ const Game: React.FC = () => {
 
   useEffect(() => {
     let animationTimer: NodeJS.Timeout;
-    if (isMovingHorizontally && !gameOver && gameRunning) {
+    if (isMovingHorizontally && !gameOver && gameRunning && !isPaused) {
       animationTimer = setInterval(() => {
         setPlayerAnimationFrame(prevFrame => {
           if (prevFrame === 0 && !isMovingHorizontally) return 0;
@@ -290,10 +308,10 @@ const Game: React.FC = () => {
       setPlayerAnimationFrame(0);
     }
     return () => clearInterval(animationTimer);
-  }, [isMovingHorizontally, gameOver, gameRunning]);
+  }, [isMovingHorizontally, gameOver, gameRunning, isPaused]);
 
   useEffect(() => {
-    if (!gameRunning || gameOver) {
+    if (!gameRunning || gameOver || isPaused) {
       if (milesIntervalTimerRef.current) clearInterval(milesIntervalTimerRef.current);
       return;
     }
@@ -304,11 +322,11 @@ const Game: React.FC = () => {
     return () => {
       if (milesIntervalTimerRef.current) clearInterval(milesIntervalTimerRef.current);
     }
-  }, [gameRunning, gameOver]);
+  }, [gameRunning, gameOver, isPaused]);
 
 
   const gameLoop = useCallback((timestamp: number) => {
-    if (!gameRunning || gameOver) {
+    if (!gameRunning || gameOver || isPaused) {
       gameLoopRef.current = requestAnimationFrame(gameLoop);
       return;
     }
@@ -453,7 +471,7 @@ const Game: React.FC = () => {
     if (gameRunning && !gameOver) { 
         gameLoopRef.current = requestAnimationFrame(gameLoop);
     }
-  }, [gameRunning, gameOver, obstaclesRef, pizzasRef]); // Added obstaclesRef and pizzasRef
+  }, [gameRunning, gameOver, obstaclesRef, pizzasRef, isPaused]); // Added obstaclesRef, pizzasRef and isPaused
 
   useEffect(() => {
     if (gameRunning && !gameOver) {
@@ -488,22 +506,42 @@ const Game: React.FC = () => {
     position: 'relative',
   };
 
-  const gameWrapperClasses = "w-full max-w-4xl mx-auto flex flex-col items-center h-full overflow-hidden";
+  const gameWrapperClasses = "w-full max-w-4xl mx-auto flex flex-col h-full overflow-hidden";
 
 
   return (
-    <div className={gameWrapperClasses}>
+    <div className={cn(gameWrapperClasses, "relative")}>
+      <Button
+        onClick={onExitGame}
+        variant="secondary"
+        size="icon"
+        className="absolute top-4 left-4 z-50 pixel-box rounded-none"
+        aria-label="Close Game"
+      >
+        <XCircle className="h-5 w-5" />
+      </Button>
       <audio ref={backgroundAudioRef} src="/backgroundmusic.mp3" loop preload="auto" />
       <audio ref={gameOverAudioRef} src="/restart.mp3" preload="auto" />
-      <div className="flex justify-between w-full mb-1 sm:mb-2 text-xs sm:text-sm md:text-base px-1">
+      <div className="flex justify-between w-full mb-1 sm:mb-2 text-xs sm:text-sm md:text-base px-1 pt-12">
         <p className="pixel-text">Pizzas: {uiPizzasCollected}</p>
         <p className="pixel-text">Miles: {uiMilesCovered}</p>
       </div>
       <div
         ref={scalerWrapperRef}
-        className="flex-grow pixel-box rounded-md"
+        className={cn(
+            "flex-grow pixel-box rounded-md relative", // Added relative for pause button positioning
+        )}
         style={scalerWrapperStyle}
       >
+        <Button
+            onClick={handlePauseToggle}
+            variant="secondary"
+            size="icon"
+            className="absolute top-1 right-1 z-50 pixel-box rounded-none"
+            aria-label={isPaused ? "Resume Game" : "Pause Game"}
+        >
+            {isPaused ? <PlayIcon className="h-5 w-5" /> : <PauseIcon className="h-5 w-5" />}
+        </Button>
         <div
           ref={gameAreaRef}
           style={gameAreaDynamicStyle}
@@ -561,10 +599,11 @@ const Game: React.FC = () => {
         </div>
       </div>
       <div className="mt-2 sm:mt-4 text-xs text-center text-muted-foreground pixel-text">
-        Controls: Left/Right Arrows or A/D to Move, Space/Up Arrow or W to Jump
+        Controls: Left/Right Arrows or A/D to Move, Space/Up Arrow or W to Jump, Esc to Pause/Resume
       </div>
     </div>
   );
 };
 
 export default Game;
+
