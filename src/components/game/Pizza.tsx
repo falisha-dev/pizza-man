@@ -27,8 +27,6 @@ const PizzaComponent: React.FC<PizzaProps> = ({ x, y, width, height }) => {
         top: `${y}px`,
         width: `${width}px`,
         height: `${height}px`,
-        // Consistent shadow with obstacles
-        boxShadow: '1px 1px 0px hsl(var(--foreground)), -1px -1px 0px hsl(var(--background))',
         imageRendering: 'pixelated', 
       }}
       aria-label="Pizza slice collectible"
@@ -63,3 +61,4 @@ const PizzaComponent: React.FC<PizzaProps> = ({ x, y, width, height }) => {
 };
 
 export default PizzaComponent;
+

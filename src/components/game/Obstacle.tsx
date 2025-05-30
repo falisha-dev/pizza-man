@@ -1,3 +1,4 @@
+
 // src/components/game/Obstacle.tsx
 "use client";
 
@@ -57,7 +58,6 @@ const Obstacle: React.FC<ObstacleProps> = ({ x, y, width, height, color }) => {
         top: `${y}px`,
         width: `${width}px`,
         height: `${height}px`,
-        boxShadow: '1px 1px 0px hsl(var(--foreground)), -1px -1px 0px hsl(var(--background))',
         imageRendering: 'pixelated',
       }}
       aria-label="Minion obstacle"
@@ -96,3 +96,4 @@ const Obstacle: React.FC<ObstacleProps> = ({ x, y, width, height, color }) => {
 };
 
 export default Obstacle;
+
